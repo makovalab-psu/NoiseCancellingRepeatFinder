@@ -240,6 +240,7 @@ def main():
 	positions.sort()
 
 	if (minFill != None):
+		fillBp += minFill * (numRepeats+1)
 		for rptNum in xrange(numRepeats):
 			positions[rptNum] += (rptNum+1) * minFill
 
