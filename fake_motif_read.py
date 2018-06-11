@@ -60,6 +60,7 @@ usage: fake_motif_read <motif> [options]
   --lengths=<file>         file containing the repeat length distribution, one
                            length per line; if this is absent, we'll read the
                            repeat length distribution from stdin
+  --minfill=<bp>      (F=) minimum fill (random sequence) between repeats
   --errors=pacbio          simulate pacbio error profile
                            (by default, errors are not simulated)
   --errors=nanopore        simulate nanopore error profile
@@ -92,6 +93,7 @@ def main():
 	genNeighbors    = 0.0
 	genMixture      = 0.0
 	lengthsFilename = None
+	minFill         = None
 	errorProfile    = None
 	catalogFilename = None
 	wrapLength      = 100
@@ -123,6 +125,13 @@ def main():
 			genMixture = parse_probability(argVal)
 		elif (arg.startswith("--lengths=")):
 			lengthsFilename = argVal
+		elif (arg.startswith("--minfill=")) or (arg.startswith("F=")):
+			minFill = int(argVal)
+			if (minFill < 0):
+				print >>stderr, "WARNING: \"%s\" interpreted as no minimum fill" % argVal
+				minFill = None
+			if (minFill == 0):
+				minFill = None
 		elif (arg == "--errors=pacbio"):
 			errorProfile = "pacbio"
 		elif (arg == "--errors=pacbio.giab"):
@@ -211,16 +220,28 @@ def main():
 		else: # if (op == "+"):
 			sequenceLen = totalRepeatBp + sequenceLen
 
-	if (totalRepeatBp <= sequenceLen):
-		fillBp = sequenceLen - totalRepeatBp
-	else:
+	if (totalRepeatBp > sequenceLen):
 		fillBp = 0
 		if (sequenceLen > 0):
 			print >>stderr, "WARNING: length of embedded repeats (%d) exceeds specified" % totalRepeatBp
 			print >>stderr, "         sequence length (%d); there will be no fill DNA"   % sequenceLen
+	elif (minFill != None):
+		fillBp = sequenceLen - totalRepeatBp
+		totalMinFill = (numRepeats+1) * minFill
+		if (totalMinFill > fillBp):
+			print >>stderr, "WARNING: minimum fill of %d cannot be achieved"           % minFill
+			print >>stderr, "         total minimum fill (%d) exceeds total fill (%d)" % (totalMinFill,fillBp)
+			minFill = fillBp / (numRepeats+1)
+		fillBp -= minFill * (numRepeats+1)
+	else:
+		fillBp = sequenceLen - totalRepeatBp
 
 	positions = [randint(0,fillBp) for _ in xrange(numRepeats)]
 	positions.sort()
+
+	if (minFill != None):
+		for rptNum in xrange(numRepeats):
+			positions[rptNum] += (rptNum+1) * minFill
 
 	# generate the sequence
 
