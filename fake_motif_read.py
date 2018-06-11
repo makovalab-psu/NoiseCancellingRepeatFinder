@@ -47,7 +47,7 @@ usage: fake_motif_read <motif> [options]
                            comprise the entire read (no fill DNA)
   --length=<pctg>%    (L=) read length as a percentage of the total repeat
                            length; pctg should be more than 100.
-  --length=+<bp>      (L=) read length as delata above the total repeat length
+  --length=+<bp>      (L=) read length as delta above the total repeat length
   --repeats=<number>  (N=) number of repeats to embed
                            (default is 1)
   --motif:neighbor=<prob>  probability of embedding motifs that have edit
