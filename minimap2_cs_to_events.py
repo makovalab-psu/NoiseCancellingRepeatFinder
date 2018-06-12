@@ -15,7 +15,7 @@ usage: cat <output_from_minimap2> | minimap2_cs_to_events [options]
   --minquality=<qual>  discard low quality alignments
   --withheader         include a header line in the output
   --remove:cs          remove the cs tag
-  --remove:tags        remove the all tags
+  --remove:tags        remove all tags
 
 The minimap2 output should include the cs tag, i.e. minimap2 should have been
 run with the "--cs=short" option."""
@@ -86,6 +86,9 @@ def main():
 
 
 def minimap2_alignments(f):
+	# nota bene: minimap2 output format is described here:
+	#   https://lh3.github.io/minimap2/minimap2.html#10
+
 	a = None
 
 	lineNumber = 0
