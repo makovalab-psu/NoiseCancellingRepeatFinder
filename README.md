@@ -6,7 +6,7 @@ sequences in fasta files (e.g. PacBio sequenced reads), it attempts to align
 segments of the DNA sequences to repeated copies of the motifs.
 
 Note that this is *not* intended to be a turnkey solution but more of an
-exploratory platofrm for the user. It will likely require parameter tweaking
+exploratory platform for the user. It will likely require parameter tweaking
 and experimentation on the part of the user, as well as some user-written
 programs to post-process the output.
 
