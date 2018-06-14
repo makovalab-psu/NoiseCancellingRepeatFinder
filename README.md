@@ -16,7 +16,7 @@ To install Noise Cancelling Repeat Finder using the source:
 1. Download the latest version of Noise Cancelling Repeat Finder using Github  
 _WARNING: this will be moved to a different repository_.
 ```bash  
-     git clone https://github.com/makovalab-psu/NoRF  
+     https://github.com/makovalab-psu/NoiseCancellingRepeatFinder.git  
 ```  
 2. Compile:  
 ```bash  
