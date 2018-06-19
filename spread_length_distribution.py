@@ -24,9 +24,10 @@ usage: cat <distribution_spec> | spread_length_distribution [options]
   --seed=<string>      random number generator seed
 
 The distribution spec file consists of three columns -- length, outCount,
-inCount -- a length or interval, the number of sequences of that length to be
-output, and the number of sequences of that length we expect would be seen in
-input. This is the same format used as input to fasta_match_length_distribution.
+inCount -- a length (or length interval), the number of sequences of that
+length to be output, and the number of sequences of that length we expect would
+be seen in input. This is the same format used as input to
+fasta_match_length_distribution.
 
 The components file lists component names, one per line. These are mapped to
 length distribution files by the input filespec.  Each of the component length
@@ -40,7 +41,7 @@ this program is then to spread the outCount of the distribution spec to the
 components, and thus create a distribution spec for each component.
 
 For example, suppose we have five lengths/intervals and these three components
-and dsitribution spec:
+and distribution spec:
 
   component 1    component 2    component 3    distribution spec
   375-378 826    375-378 103    375-378 6804   375-378 4700 7733
