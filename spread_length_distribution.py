@@ -63,7 +63,7 @@ below, that split was 4700=509+66+4125.
   392-395 515 820    392-395 55 90    392-395 4530 7387
 
 Note that we make no effort to maintain proportions, but the sampling process
-will usually report in something close to proportionality."""
+will usually result in something close to proportionality."""
 
 	if (s == None): exit (message)
 	else:           exit ("%s%s" % (s,message))
