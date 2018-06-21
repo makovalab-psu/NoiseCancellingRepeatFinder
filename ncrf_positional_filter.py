@@ -48,7 +48,7 @@ usage: cat <output_from_NCRF> | ncrf_positional_filter [options]
   --batch=<number>      number of input alignments processed by each call to R;
                         our ability to call R fails if the command line we pass
                         it is too long
-                        (default is 250)
+                        (default is 30)
 
 In a "true" alignment to a given motif unit, we expect the errors to be
 distributed randomly and uniformly among the positions in the unit.  (That is
@@ -85,7 +85,7 @@ def main():
 	discardWhich = "bad"
 	testWhich    = "matches"
 	headLimit    = None
-	batchSize    = 250
+	batchSize    = 30
 	reportAs     = "ncrf"
 	requireEof   = True
 	debug        = []
