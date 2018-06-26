@@ -40,7 +40,7 @@ errorProfileNanoporeReadSim = {"mm":0.03,   "i":0.03,   "d":0.03  }
 
 def usage(s=None):
 	message = """
-usage: fake_motif_read <motif> [options]
+usage: mock_motif_read <motif> [options]
   <motif>                  (cumulative) motif to embed
   --name=<string>          read name
   --length=<bp>       (L=) read length; if this is absent, the repeats will
