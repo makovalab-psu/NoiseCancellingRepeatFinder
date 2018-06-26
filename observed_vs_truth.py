@@ -54,7 +54,7 @@ columns but only the aligned intervals and motif are used here ("seq", "start",
 "end", and "motif", columns 3, 4, 5, and 2).
 
 The truth catalog is usually the output from the --catalog option of
-fake_motif_read. It has 12 columns but only the intervals and motif are used
+mock_motif_read. It has 12 columns but only the intervals and motif are used
 here ("chrom", "start", "end", and "motif", columns 1, 2, 3, and 4). Intervals
 must be distinct; overlaps are not allowed."""
 

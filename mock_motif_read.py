@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Create a fake "read" with embedded repeat motifs.
+Create a mock "read" with embedded repeat motifs.
 """
 
 from sys        import argv,stdin,stderr,exit
