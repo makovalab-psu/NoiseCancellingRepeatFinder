@@ -8,8 +8,9 @@ motif unit.
 # TODO: pass data to R via a temporary file, rather than on the Rscript
 #       command line
 
-import os,subprocess
+import subprocess
 from sys        import argv,stdin,stdout,stderr,exit
+from os         import path as os_path
 from ncrf_parse import alignments,parse_probability,int_with_unit
 
 # Implementation Notes:
@@ -138,7 +139,7 @@ def main():
 		exit(("%s: Unable to run the shell command \"Rscript\";"
 		       + "\n  .. Either R hasn't been installed, or the command-line shell"
 		       + " can't find it.")
-		   % os.path.basename(argv[0]))
+		   % os_path.basename(argv[0]))
 
 	# collect the alignments; we need to collect the positional info for all
 	# alignments, to feed to R in batches (doing them one-by-one was incredibly
@@ -193,19 +194,19 @@ def main():
 			exit(("%s: internal error: having trouble with R"
 			        + " (with alignment batch %d..%d)"
 			        + "\nHere's what R reported:\n%s")
-			   % (os.path.basename(argv[0]),batchStartIx,batchEndIx,sigBatch))
+			   % (os_path.basename(argv[0]),batchStartIx,batchEndIx,sigBatch))
 
 		if (len(sigBatch) != batchEndIx-batchStartIx):
 			exit(("%s: internal error: number of test results reported by R (%d)"
 			       + "\n  .. doesn't match the number of tests given to R (%d)")
-			   % (os.path.basename(argv[0]),len(sigBatch),batchEndIx-batchStartIx))
+			   % (os_path.basename(argv[0]),len(sigBatch),batchEndIx-batchStartIx))
 
 		accepted += sigBatch
 
 	# process the alignments and their assessments
 	# $$$ untested alignments should be processed by some other test -- for
-	#     example, a perfect alignment currently gets discarded because it
-	#     can't be tested
+	#     example (if we're testing by error counts), a perfect alignment
+	#     currently gets discarded because it can't be tested
 
 	if (reportAs == "matrix"):
 		# see note [1] above for the format of the matrix file
@@ -227,6 +228,7 @@ def main():
 			mapping = {True:  "match uniformity not rejected",
 			           False: "match uniformity rejected",
 			           None:  "untested"}
+		numKept = 0
 		isFirst = True
 		for (alignmentNum,a) in enumerate(alignmentList):
 			testResult = accepted[alignmentNum]
@@ -243,6 +245,10 @@ def main():
 			if (isFirst): isFirst = False
 			else:         print
 			print a
+			numKept += 1
+
+		print >>stderr, "(%s kept %d of %d alignments, %.2f%%)" \
+		              % (os_path.basename(argv[0]),numKept,numAlignments,100.0*numKept/numAlignments)
 
 		if (requireEof):
 			print "# ncrf end-of-file"
@@ -254,7 +260,7 @@ def positional_error_vector(a,modified=None):
 	positionalStats = a.positional_stats()
 	if (positionalStats == None):
 		exit("%s: alignment at line %d has no positional stats"
-		   % (os.path.basename(argv[0]),a.lineNumber))
+		   % (os_path.basename(argv[0]),a.lineNumber))
 	numPositions = len(positionalStats)
 	vec = [None] * (2*numPositions)
 
@@ -315,7 +321,7 @@ def mx_significance_tests(mxMatrix,testWhich,effectSize,power):
 	n = len(mxMatrix)
 	mxFlat = [v for rowVec in mxMatrix for v in rowVec]
 
-	selfPath = os.path.dirname(os.path.realpath(__file__))
+	selfPath = os_path.dirname(os_path.realpath(__file__))
 
 	rCommand =  []
 	rCommand += ["source('%s/ncrf_positional_filter.r')" % selfPath]
@@ -338,7 +344,7 @@ def mx_significance_tests(mxMatrix,testWhich,effectSize,power):
 	for line in lines:
 		if (line not in mapping):
 			exit("%s: internal error: having trouble with R; try reducing the --batch setting (%d)"
-			   % (os.path.basename(argv[0]),batchSize))
+			   % (os_path.basename(argv[0]),batchSize))
 	return map(lambda x:mapping[x],lines)
 
 
