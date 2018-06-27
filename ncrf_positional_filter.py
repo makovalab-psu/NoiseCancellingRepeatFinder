@@ -44,6 +44,7 @@ usage: cat <output_from_NCRF> | ncrf_positional_filter [options]
   --test:errors         perform the test using error counts; this may increase
                         the likelihood that the test cannot be performed for
                         some alignments
+  --test:matches-insertions perform the test using match counts less insertions
   --head=<number>       limit the number of input alignments
   --batch=<number>      number of input alignments processed by each call to R;
                         our ability to call R fails if the command line we pass
@@ -108,6 +109,9 @@ def main():
 			testWhich = "matches"
 		elif (arg in ["--test:errors","--test=errors"]):
 			testWhich = "errors"
+		elif (arg in ["--test:matches-insertions","--test=matches-insertions",
+		              "--test:m-i","--test=m-i"]):
+			testWhich = "matches-insertions"
 		elif (arg.startswith("--head=")):
 			headLimit = int_with_unit(argVal)
 		elif (arg.startswith("--batch=")):
@@ -152,7 +156,10 @@ def main():
 			print >>stderr, "limit of %d alignments reached" % headLimit
 			break
 
-		mxRow = positional_error_vector(a)
+		if (testWhich == "matches-insertions"):
+			mxRow = positional_error_vector(a,modified="m-i")
+		else:
+			mxRow = positional_error_vector(a)
 		if (mxRow == None):
 			raise ValueError, \
 			      "alignment at line %d does not contain positional information" \
@@ -205,10 +212,14 @@ def main():
 		mapping = {True:"not_rejected", False:"rejected", None:"untested"}
 		for (alignmentNum,a) in enumerate(alignmentList):
 			testResult = accepted[alignmentNum]
-			vec = [a.lineNumber,mapping[testResult]] + positional_error_vector(a)
+			vec = [a.lineNumber,mapping[testResult]] + mxMatrix[alignmentNum]
 			print "\t".join(map(str,vec))
 	else: # if (reportAs == "ncrf"):
-		if (testWhich == "errors"):
+		if (testWhich == "matches-insertions"):
+			mapping = {True:  "match-insert uniformity not rejected",
+			           False: "match-insert uniformity rejected",
+			           None:  "untested"}
+		elif (testWhich == "errors"):
 			mapping = {True:  "error uniformity not rejected",
 			           False: "error uniformity rejected",
 			           None:  "untested"}
@@ -239,7 +250,7 @@ def main():
 
 # positional_error_vector--
 
-def positional_error_vector(a):
+def positional_error_vector(a,modified=None):
 	positionalStats = a.positional_stats()
 	if (positionalStats == None):
 		exit("%s: alignment at line %d has no positional stats"
@@ -256,8 +267,14 @@ def positional_error_vector(a):
 			raise ValueError, \
 				  "\"x\" missing from positional information for alignment at line %d" \
 				% a.lineNumber
+		if (modified == "m-i") and ("i" not in stats):
+			raise ValueError, \
+				  "\"i\" missing from positional information for alignment at line %d" \
+				% a.lineNumber
 
-		vec[pos]              = stats["m"]
+		if (modified == "m-i"): vec[pos] = stats["m"] - stats["i"]
+		else:                   vec[pos] = stats["m"]
+
 		vec[numPositions+pos] = stats["x"]
 
 	return vec
@@ -273,6 +290,7 @@ def positional_error_vector(a):
 # for errors ("x").
 #
 # testWhich indicates whether to base the test on the matches or the errors.
+# This is "matches", "errors", or "matches-insertions".
 #
 # If the process was unsuccessful, the return value is a string describing the
 # the reason for the failure (hopefully).
@@ -291,7 +309,8 @@ def mx_significance_tests(mxMatrix,testWhich,effectSize,power):
 	# a separate string in a list, and separating semi-colons will be added
 	# when we go to run it
 
-	testErrorCounts = "TRUE" if (testWhich == "errors") else "FALSE"
+	testErrorCounts = "TRUE" if (testWhich == "errors") \
+	             else "FALSE"  # this includes "matches" or "matches-insertions"
 
 	n = len(mxMatrix)
 	mxFlat = [v for rowVec in mxMatrix for v in rowVec]
