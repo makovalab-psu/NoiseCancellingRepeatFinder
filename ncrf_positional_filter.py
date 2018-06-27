@@ -27,6 +27,14 @@ from ncrf_parse import alignments,parse_probability,int_with_unit
 #     columns M+3 thru 2M+2 are the positional error counts. We assume all rows
 #     have the same number of columns, i.e. that the same motif length is
 #     represented in all rows.
+#
+# [2] Justification for "matches-insertions" (as opposed to just "matches").
+#     When NCRF counts matches, a deletion (a base deleted from the motif)
+#     results in a decrease of the count of matches at that position.  There is
+#     no similar effect for an insertion (a base inserted into the motif).
+#     Thus if we base our test solely on matches, insertions will not
+#     contribute to the test.  Subtracting insertion counts from match counts
+#     gives insertions the same effect as deletions.
 
 def usage(s=None):
 	message = """
