@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Create a mock "read" with embedded repeat motifs.
+Create a mock genome (or a "read") with embedded repeat motifs.
 """
 
 from sys        import argv,stdin,stderr,exit
@@ -40,7 +40,7 @@ errorProfileNanoporeReadSim = {"mm":0.03,   "i":0.03,   "d":0.03  }
 
 def usage(s=None):
 	message = """
-usage: mock_motif_read <motif> [options]
+usage: mock_motif_genome <motif> [options]
   <motif>                  (cumulative) motif to embed
   --name=<string>          read name
   --length=<bp>       (L=) read length; if this is absent, the repeats will
