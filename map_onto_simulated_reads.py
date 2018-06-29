@@ -8,7 +8,7 @@ from sys  import argv,stdin,stdout,stderr,exit
 
 def usage(s=None):
 	message = """
-usage: [cat <intervals_file> |] map_onto_simulated_reads [options]
+usage: cat <intervals_file> | map_onto_simulated_reads [options]
   --cigars=<filename>    (mandatory) cigar strings file (an input file)
   --stranded=<columns>   (cumulative) input columns which are presumed to have
                          strand info (+ or -) as their final character;
