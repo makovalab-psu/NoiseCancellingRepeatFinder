@@ -222,6 +222,20 @@ def main():
 				aSliced = slice_alignment(a,s,e)
 				print_alignment(aSliced)
 
+				if ("intervalsanity" in debug):
+					rText    = remove_gaps(a.rText)
+					realText = rNucs[a.rStart:a.rEnd]
+					if (realText != rText):
+						exit("%s: sanity check failed for read:\n\"%s\"\n\"%s\""
+						   % (os_path.basename(argv[0]),rText,realText))
+
+					gText    = remove_gaps(a.gText).upper()
+					realText = chromToSequence[chrom][a.gStart:a.gEnd]
+					if (strand == "-"): realText = reverse_complement(realText)
+					if (realText != gText):
+						exit("%s: sanity check failed for genome:\n\"%s\"\n\"%s\""
+						   % (os_path.basename(argv[0]),gText,realText))
+
 	readsF.close()
 
 
@@ -564,17 +578,23 @@ def slice_alignment(a,gStart,gEnd):
 		aSliced.gText  = reverse_complement(gText[startIx:endIx])
 		(rSliceStart,rSliceEnd) = (a.rEnd-rSliceEnd,a.rEnd-rSliceStart)
 
-	aSliced.rNucs  = "".join([nuc for nuc in aSliced.rText if (nuc != "-")])
+	aSliced.rNucs  = remove_gaps(aSliced.rText)
 	aSliced.rStart = rSliceStart
 	aSliced.rEnd   = rSliceEnd
 
-	aSliced.gNucs  = "".join([nuc for nuc in aSliced.gText if (nuc != "-")]).upper()
+	aSliced.gNucs  = remove_gaps(aSliced.gText).upper()
 	aSliced.gStart = gSliceStart
 	aSliced.gEnd   = gSliceEnd
 	aSliced.motif  = "%s:%d-%d%s" \
 	               % (aSliced.chrom,aSliced.gStart,aSliced.gEnd,aSliced.strand)
 
 	return aSliced
+
+
+# remove_gaps--
+
+def remove_gaps(text):
+	return "".join([nuc for nuc in text if (nuc != "-")])
 
 
 if __name__ == "__main__": main()
