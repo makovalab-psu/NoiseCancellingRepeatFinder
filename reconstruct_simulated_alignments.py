@@ -26,23 +26,35 @@ usage: reconstruct_simulated_alignments [options]
   --intervals=<filename>   If this is provided, alignments are truncated to
                            these intervals in the genome (format described
                            below).
+  --catalog=<filename>     If this is provided, alignments are truncated to the
+						   repeat intervals given by the file, and positional
+						   match/mismatch/insert/delete counts are produced. 
+						   The format of the input file is the same as produced
+						   by mock_motif_genome's --catalog option. Positional
+						   counts are the same as would be produced by NCRF's
+						   --positionalevents option.
   --chromosome[s]=<names>  (cumulative) only reconstruct alignments on the
                            specified "chromosomes";  <names> is a comma-
                            separated list of sequence names in the genome
                            (default is to report intervals on all chromosomes)
+  --minlength=<bp>         discard alignments that aren't long enough on the; length
+                           genome
+                           (but default, we don't filter by length)
 
 Given a genome and simulated reads sampled by simulate_reads_v4, and the
-corresponding cigars file, alignments are reconstructed.  Note that this is
+corresponding cigars file, alignments are reconstructed. Note that this is
 *not* an aliger; it is just reconstructing the alignment truth that the
 simulate_reads_v4 created.
 
 Note that by default we store the entire genome in memory. If the genome is
-large, this could create memory issues. The --chromosomes option can be used
-to process alignments on different chromosomes.  Also, chromosomes not
-appearing in the intervals file (if on is provided) are not stored.
+large, this could create memory issues. The --chromosomes option can be used to
+process alignments on different chromosomes. Also, chromosomes not appearing in
+the intervals file (if on is provided) are not stored.
 
 Intervals, if provided, are one per line, <chrom> start> <end>, origin-zero
-half-open. Any additional columns are ignored."""
+half-open. Any additional columns are ignored.
+
+Alignment output is in a format compatible with that produced by NCRF."""
 
 	if (s == None): exit (message)
 	else:           exit ("%s\n%s" % (s,message))
@@ -54,16 +66,18 @@ def main():
 
 	# parse the command line
 
-	genomeFilename    = None
-	readsFilename     = None
-	cigarFilename     = None
-	intervalsFilename = None
-	chromsOfInterest  = None
-	nameFieldW        = 1
-	lengthFieldW      = 1
-	countFieldW       = 1
-	rangeFieldW       = 1
-	debug             = []
+	genomeFilename      = None
+	readsFilename       = None
+	cigarFilename       = None
+	intervalsFilename   = None
+	intervalsAreCatalog = False
+	chromsOfInterest    = None
+	minLength           = None
+	nameFieldW          = 1
+	lengthFieldW        = 1
+	countFieldW         = 1
+	rangeFieldW         = 1
+	debug               = []
 
 	for arg in argv[1:]:
 		if ("=" in arg):
@@ -76,12 +90,27 @@ def main():
 		elif (arg.startswith("--cigars=")) or (arg.startswith("--cigar=")):
 			cigarFilename = argVal
 		elif (arg.startswith("--intervals=")) or (arg.startswith("--interval=")):
-			intervalsFilename = argVal
+			if (intervalsFilename != None):
+				usage("--intervals and --catalog are mutually exclusive")
+			intervalsFilename   = argVal
+			intervalsAreCatalog = False
+		elif (arg.startswith("--catalog=")):
+			if (intervalsFilename != None):
+				usage("--intervals and --catalog are mutually exclusive")
+			intervalsFilename   = argVal
+			intervalsAreCatalog = True
 		elif (arg.startswith("--chromosome=")) or (arg.startswith("--chromosomes=")) \
 		  or (arg.startswith("--chrom="))      or (arg.startswith("--chroms=")):
 			if (chromsOfInterest == None): chromsOfInterest = set()
 			for chrom in argVal.split(","):
 				chromsOfInterest.add(chrom)
+		elif (arg.startswith("--minlength=")) or (arg.startswith("--minlen=")):
+			try:
+				minLength = int(argVal)
+				if (minLength < 0): raise ValueError
+				if (minLength == 0): minLength = None
+			except ValueError:
+				usage("bad length in \"%s\"" % arg)
 		elif (arg.startswith("--fields=")) or (arg.startswith("F=")):
 			(nameFieldW,lengthFieldW,countFieldW,rangeFieldW) = argVal.split(",",4)
 			nameFieldW   = max(int(nameFieldW),1)
@@ -124,10 +153,23 @@ def main():
 
 		intervalsF = file(intervalsFilename,"rt")
 
-		for (chrom,gStart,gEnd,tags) in read_intervals(intervalsF):
+		for (lineNumber,chrom,gStart,gEnd,tags) in read_intervals(intervalsF):
 			if (chromsOfInterest != None) and (chrom not in chromsOfInterest): continue
 			if (chrom not in chromToIntervals): chromToIntervals[chrom] = []
-			chromToIntervals[chrom] += [(gStart,gEnd)]
+
+			if (intervalsAreCatalog):
+				if (tags == None):
+					exit("%s: not enough fields at line %d (%d, expected at least %d)"
+					   % (os_path.basename(argv[0]),lineNumber,len(fields),4))
+				(motif,strand) = (tags[0][:-1],tags[0][-1:])
+				if ("." in motif): motif = motif[:motif.find(".")]
+				if (strand not in ["+","-"]) or (not is_nucleotide_string(motif)):
+					exit("%s: bad motif at line %d: \"%s\""
+					   % (os_path.basename(argv[0]),lineNumber,tags[0]))
+			else:
+				motif = strand = None
+
+			chromToIntervals[chrom] += [(gStart,gEnd,motif,strand)]
 
 		intervalsF.close()
 
@@ -215,28 +257,37 @@ def main():
 		(a.rText,a.gText) = reconstruct_alignment(rNucs,gNucs,cigar)
 
 		if (chromToIntervals == None):
+			if (minLength != None) and (a.gEnd-a.gStart < minLength):
+				continue
 			print_alignment(a)
 		else:
 			intervals = chromToIntervals[chrom]
-			for (s,e) in intersecting_intervals(intervals,gStart,gEnd):
+			for (s,e,motif,mStrand) in intersecting_intervals(intervals,gStart,gEnd):
 				aSliced = slice_alignment(a,s,e)
+				if (minLength != None) and (aSliced.gEnd-aSliced.gStart < minLength):
+					continue
 				print_alignment(aSliced)
 
 				if ("intervalsanity" in debug):
-					rText    = remove_gaps(a.rText)
-					realText = rNucs[a.rStart:a.rEnd]
+					rText    = remove_gaps(aSliced.rText)
+					realText = rNucs[aSliced.rStart:aSliced.rEnd]
 					if (realText != rText):
 						exit("%s: sanity check failed for read:\n\"%s\"\n\"%s\""
 						   % (os_path.basename(argv[0]),rText,realText))
 
-					gText    = remove_gaps(a.gText).upper()
-					realText = chromToSequence[chrom][a.gStart:a.gEnd]
+					gText    = remove_gaps(aSliced.gText).upper()
+					realText = chromToSequence[chrom][aSliced.gStart:aSliced.gEnd]
 					if (strand == "-"): realText = reverse_complement(realText)
 					if (realText != gText):
 						exit("%s: sanity check failed for genome:\n\"%s\"\n\"%s\""
 						   % (os_path.basename(argv[0]),gText,realText))
 
+				if (motif != None):
+					positionalStats = positonal_stats(aSliced,motif,mStrand)
+					print_positonal_stats(positionalStats)
+
 	readsF.close()
+	print "# ncrf end-of-file"
 
 
 # print_alignment--
@@ -316,7 +367,7 @@ def read_intervals(f):
 			exit("%s: bad interval (at line %d): %s"
 			   % (os_path.basename(argv[0]),lineNumber,line))
 
-		yield (chrom,gStart,gEnd,tags)
+		yield (lineNumber,chrom,gStart,gEnd,tags)
 
 
 def read_fasta_sequences(f,namesOfInterest=None):
@@ -465,7 +516,7 @@ def alignment_to_error_text(rText,gText):
 	eText = []
 	gNew  = []
 
-	for (ix,(rCh,gCh)) in enumerate(zip(rText,gText)):
+	for (rCh,gCh) in zip(rText,gText):
 		if (rCh == gCh):
 			eText += ["="]
 			gNew  += [gCh]
@@ -524,13 +575,15 @@ def extract_events(rText,gText):
 #            may be overlapping
 
 def intersecting_intervals(intervals,start,end):
-	for (s,e) in intervals:
+	for (s,e,motif,mStrand) in intervals:
 		if (s >= end):   continue  # tempting to break, but that would be incorrect
 		if (e <= start): continue
-		yield (max(s,start),min(e,end))
+		yield (max(s,start),min(e,end),motif,mStrand)
 
 
 # slice_alignment--
+
+# $$$$$ what happened to the lower case mismatches?
 
 def slice_alignment(a,gStart,gEnd):
 	aSliced = Alignment()
@@ -591,10 +644,82 @@ def slice_alignment(a,gStart,gEnd):
 	return aSliced
 
 
+# positonal_stats--
+
+def positonal_stats(a,motif,mStrand):
+	motifLen = len(motif)
+
+	if (mStrand == a.strand):
+		(rText,gText) = (a.rText,a.gText.upper())
+		gNucs = a.gNucs
+	else:
+		(rText,gText) = (reverse_complement(a.rText),reverse_complement(a.gText).upper())
+		gNucs = reverse_complement(a.gNucs)
+
+	if (len(gNucs) >= 2*len(motif)-1):
+		offset = gNucs.find(motif)
+		assert (0 <= offset < motifLen)
+	elif (len(gNucs) >= motifLen):
+		offset = motifLen - (motif+motif).find(gNucs[:motifLen])
+		assert (1 <= offset <= motifLen)
+	else: # if (len(gNucs) < motifLen):
+		offset = motifLen - (motif+motif).find(gNucs)
+		assert (1 <= offset <= motifLen)
+	mPos = (-offset) % motifLen
+
+	positionalStats = [None] * motifLen
+	for mPos in xrange(motifLen):
+		positionalStats[mPos] = {"nuc":motif[mPos],
+		                         "m":0, "mm":0, "i":0, "d":0,
+		                         "mmA":0, "mmC":0, "mmG":0, "mmT":0}
+
+	for (rCh,gCh) in zip(rText,gText):
+		if (gCh == "-"):     # insertion
+			positionalStats[mPos]["i"] += 1
+		elif (rCh == "-"):   # deletion
+			positionalStats[mPos]["d"] += 1
+			mPos = (mPos+1) % motifLen
+		elif (rCh == gCh):   # match
+			positionalStats[mPos]["m"] += 1
+			mPos = (mPos+1) % motifLen
+		else:                # mismatch
+			positionalStats[mPos]["mm"]     += 1
+			positionalStats[mPos]["mm"+rCh] += 1
+			mPos = (mPos+1) % motifLen
+
+	for mPos in xrange(motifLen):
+		stats = positionalStats[mPos]
+		stats["x"] = stats["mm"] + stats["i"] + stats["d"]
+		denom = (stats["m"] + stats["x"])
+		stats["mRatio"] = float(stats["m"]) / (stats["m"] + stats["x"]) if (denom != 0) \
+		                  else 0.0
+
+	return positionalStats
+
+
+# print_positonal_stats--
+
+def print_positonal_stats(positionalStats):
+	for (mPos,stats) in enumerate(positionalStats):
+		s =  ["# position %d [%s]" % (mPos,stats["nuc"])]
+		s += ["# mRatio=%.1f%%" % (100*stats["mRatio"])]
+		for field in ["m","mm","i","d","mmA","mmC","mmG","mmT","x"]:
+			s += ["%s=%d" % (field,stats[field])]
+		print " ".join(s)
+
+
 # remove_gaps--
 
 def remove_gaps(text):
 	return "".join([nuc for nuc in text if (nuc != "-")])
+
+
+# is_nucleotide_string--
+
+def is_nucleotide_string(s):
+	for nuc in s:
+		if (nuc not in "ACGTacgt"): return False
+	return True
 
 
 if __name__ == "__main__": main()
