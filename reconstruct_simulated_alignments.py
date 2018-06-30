@@ -9,6 +9,8 @@ from os         import path as os_path
 from gzip       import open as gzip_open
 from ncrf_parse import reverse_complement
 
+class Alignment: pass
+
 
 def usage(s=None):
 	message = """
@@ -47,6 +49,7 @@ half-open. Any additional columns are ignored."""
 
 
 def main():
+	global nameFieldW,lengthFieldW,countFieldW,rangeFieldW
 	global debug
 
 	# parse the command line
@@ -56,6 +59,10 @@ def main():
 	cigarFilename     = None
 	intervalsFilename = None
 	chromsOfInterest  = None
+	nameFieldW        = 1
+	lengthFieldW      = 1
+	countFieldW       = 1
+	rangeFieldW       = 1
 	debug             = []
 
 	for arg in argv[1:]:
@@ -75,6 +82,20 @@ def main():
 			if (chromsOfInterest == None): chromsOfInterest = set()
 			for chrom in argVal.split(","):
 				chromsOfInterest.add(chrom)
+		elif (arg.startswith("--fields=")) or (arg.startswith("F=")):
+			(nameFieldW,lengthFieldW,countFieldW,rangeFieldW) = argVal.split(",",4)
+			nameFieldW   = max(int(nameFieldW),1)
+			lengthFieldW = max(int(lengthFieldW),1)
+			countFieldW  = max(int(countFieldW),1)
+			rangeFieldW  = max(int(rangeFieldW),1)
+		elif (arg.startswith("--namefield=")) or (arg.startswith("F1=")):
+			nameFieldW = max(int(argVal),1)
+		elif (arg.startswith("--lengthfield=")) or (arg.startswith("F2=")):
+			lengthFieldW = max(int(argVal),1)
+		elif (arg.startswith("--countfield=")) or (arg.startswith("F3=")):
+			countFieldW = max(int(argVal),1)
+		elif (arg.startswith("--intervalfield=")) or (arg.startswith("F4=")):
+			rangeFieldW = max(int(argVal),1)
 		elif (arg == "--debug"):
 			debug += ["debug"]
 		elif (arg.startswith("--debug=")):
@@ -109,6 +130,9 @@ def main():
 			chromToIntervals[chrom] += [(gStart,gEnd)]
 
 		intervalsF.close()
+
+		for chrom in chromToIntervals:
+			chromToIntervals[chrom].sort()
 
 		if (chromsOfInterest == None):
 			chromsOfInterest = set(chromToIntervals)
@@ -146,48 +170,113 @@ def main():
 
 	readNameToCigar = {}
 
-	for (readName,chrom,strand,gStart,gEnd,cigar) in read_cigars(cigarF):
+	for (lineNumber,line,readName,chrom,strand,gStart,gEnd,cigar) in read_cigars(cigarF):
 		if (chromsOfInterest != None) and (chrom not in chromsOfInterest): continue
-		(gLength,rLength) = cigar_lengths(cigar)
+		(rLength,gLength) = cigar_lengths(cigar)
 		readNameToCigar[readName] = (chrom,gStart,gEnd,gLength,strand,rLength,cigar)
-		assert (gLength == gEnd-gStart)  # ... yank this
+		if (gLength != gEnd-gStart):
+			exit("%s: bad cigar line (at line %d); cigar doesn't match interval length (%d vs %d)\n%s"
+			   % (os_path.basename(argv[0]),lineNumber,gLength,gEnd-gStart,line))
 
 	cigarF.close()
 
 	# process the reads
-
-	chromW    = max([len(chrom)    for chrom    in chromsOfInterest])
-	readNameW = max([len(readName) for readName in readNameToCigar])
-	nameW     = max(chromW+1,readNameW)
 
 	if (readsFilename.endswith(".gz")) or (readsFilename.endswith(".gzip")):
 		readsF = gzip_open(readsFilename,"rt")
 	else:
 		readsF = file(readsFilename,"rt")
 
-	isFirst = True
 	for (readName,rNucs) in read_fasta_sequences(readsF):
 		if (readName not in readNameToCigar):
 			exit("%s: \"%s\" doesn't appear in \"%s\""
 			   % (os_path.basename(argv[0]),readNameToCigar,cigarFilename))
 
 		(chrom,gStart,gEnd,gLength,strand,rLength,cigar) = readNameToCigar[readName]
-		assert (rLength == len(rNucs))  # ... yank this
 		gNucs = chromToSequence[chrom][gStart:gEnd]
 
 		if (strand == "-"):
 			gNucs = reverse_complement(gNucs)
 
-		(gText,rText) = reconstruct_alignment(gNucs,rNucs,cigar)
-		# $$$ if we have intervals, truncate alignment to the intersecting intervals
+		a = Alignment()
+		a.readName = readName
+		a.rStart   = 0
+		a.rEnd     = rLength
+		a.rLength  = rLength
+		a.rNucs    = rNucs
+		a.chrom    = chrom
+		a.strand   = strand
+		a.gStart   = gStart
+		a.gEnd     = gEnd
+		a.gNucs    = gNucs
+		a.score    = 0
+		a.motif    = "%s:%d-%d%s" % (chrom,a.gStart,a.gEnd,strand)
 
-		if (isFirst): isFirst = False
-		else:         print
+		(a.rText,a.gText) = reconstruct_alignment(rNucs,gNucs,cigar)
 
-		print "%-*s %s" % (nameW,chrom+strand,rText)
-		print "%-*s %s" % (nameW,readName,gText)
+		if (chromToIntervals == None):
+			print_alignment(a)
+		else:
+			intervals = chromToIntervals[chrom]
+			for (s,e) in intersecting_intervals(intervals,gStart,gEnd):
+				aSliced = slice_alignment(a,s,e)
+				print_alignment(aSliced)
 
 	readsF.close()
+
+
+# print_alignment--
+
+havePrintedAlignments = False
+
+def print_alignment(a):
+	global havePrintedAlignments
+
+	(nMatch,nMismatch,nInsO,nInsX,nDelO,nDelX) = extract_events(a.rText,a.gText)
+	(eText,rText,gText) = alignment_to_error_text(a.rText,a.gText)
+
+	mCount     = nMatch
+	mmCount    = nMismatch
+	iCount     = nInsO+nInsX
+	dCount     = nDelO+nDelX
+	matchRatio = float(mCount) / (mCount + mmCount + iCount + dCount)
+
+	rangeStr        = "%d-%d" % (a.rStart,a.rEnd)
+	scoreStr        = "score=%d" % a.score
+	motifWithStrand = a.motif
+	rLengthStr      = "%d" %   a.rLength
+	rBaseCountStr   = "%dbp" % len(a.rNucs)
+	gBaseCountStr   = "%dbp" % len(a.gNucs)
+
+	nameW   = max(nameFieldW,len(a.readName),len(motifWithStrand))
+	lengthW = max(lengthFieldW,len(rLengthStr))
+	countW  = max(countFieldW,len(rBaseCountStr),len(gBaseCountStr))
+	rangeW  = max(rangeFieldW,len(rangeStr),len(scoreStr))
+
+	statsStr = "# score=%d querybp=%d mRatio=%.1f%% m=%d mm=%d i=%d d=%d" \
+	         % (a.score,len(a.gNucs),100*matchRatio,mCount,mmCount,iCount,dCount)
+	if (len(statsStr) > nameW+lengthW+countW+rangeW+3):
+		nameW = len(statsStr) - (lengthW+countW+rangeW+3)
+
+	if (not havePrintedAlignments):
+		havePrintedAlignments = True
+	else:
+		print
+
+	print "%-*s %s" % (nameW+lengthW+countW+rangeW+3,statsStr,eText)
+
+	print "%-*s %-*s %-*s %-*s %s" \
+	    % (nameW,   a.readName,
+	       lengthW, rLengthStr,
+	       countW,  rBaseCountStr,
+	       rangeW,  rangeStr,
+	       a.rText)
+	print "%-*s %-*s %-*s %-*s %s" \
+	    % (nameW,   motifWithStrand,
+	       lengthW, "",
+	       countW,  gBaseCountStr,
+	       rangeW,  scoreStr,
+	       a.gText)
 
 
 def read_intervals(f):
@@ -283,7 +372,7 @@ def read_cigars(f):
 			exit("%s: unparsable cigar string (at line %d): %s"
 			   % (os_path.basename(argv[0]),lineNumber,cigar))
 
-		yield (name,chrom,strand,gStart,gEnd,cigar)
+		yield (lineNumber,line,name,chrom,strand,gStart,gEnd,cigar)
 
 
 # cigar_ops--
@@ -317,34 +406,175 @@ def cigar_lengths(cigar):
 		elif (op == "D"):
 			gLength += count
 		else: # if (op == "M"):
-			gLength += count
 			rLength += count
+			gLength += count
 
-	return (gLength,rLength)
+	return (rLength,gLength)
+
 
 # reconstruct_alignment--
 
-def reconstruct_alignment(gNucs,rNucs,cigar):
-	gText = []
+def reconstruct_alignment(rNucs,gNucs,cigar):
 	rText = []
+	gText = []
 
 	gPos = rPos = 0
 	for (count,op) in cigar:
 		if (op == "I"):
-			gText += ["-"*count]
 			rText += [rNucs[rPos:rPos+count]]
+			gText += ["-"*count]
 			rPos += count
 		elif (op == "D"):
-			gText += [gNucs[gPos:gPos+count]]
 			rText += ["-"*count]
+			gText += [gNucs[gPos:gPos+count]]
 			gPos += count
 		else: # if (op == "M"):
-			gText += [gNucs[gPos:gPos+count]]
 			rText += [rNucs[rPos:rPos+count]]
-			gPos += count
+			gText += [gNucs[gPos:gPos+count]]
 			rPos += count
+			gPos += count
 
-	return ("".join(gText),"".join(rText))
+	assert (rPos == len(rNucs))
+	assert (gPos == len(gNucs))
+
+	return ("".join(rText),"".join(gText))
+
+
+# alignment_to_error_text--
+
+def alignment_to_error_text(rText,gText):
+	if (len(rText) != len(gText)):
+		exit(("%s: internal error, alignment text lengths aren't the same"
+		       + " for alignment at line %d")
+		   % (os_path.basename(argv[0]),a.lineNumber))
+
+	eText = []
+	gNew  = []
+
+	for (ix,(rCh,gCh)) in enumerate(zip(rText,gText)):
+		if (rCh == gCh):
+			eText += ["="]
+			gNew  += [gCh]
+		elif (rCh == "-") or (gCh == "-"):
+			eText += ["x"]
+			gNew  += [gCh]
+		else:
+			eText += ["x"]
+			gNew  += [gCh.lower()]
+
+	return ("".join(eText),rText,"".join(gNew))
+
+
+# extract_events--
+
+def extract_events(rText,gText):
+	if (len(rText) != len(gText)):
+		exit(("%s: internal error, alignment text lengths aren't the same"
+		       + " for alignment at line %d")
+		   % (os_path.basename(argv[0]),a.lineNumber))
+
+	nMatch = nMismatch = nInsO = nInsX = nDelO = nDelX = 0
+
+	prevEvent = None
+	for (ix,(rCh,gCh)) in enumerate(zip(rText,gText)):
+		if (rCh == "-") and (gCh == "-"):
+			exit(("%s: internal error, gap aligned to gap in column %d" \
+			       + " of alignment at line %d")
+			   % (os_path.basename(argv[0]),ix+1,a.lineNumber))
+
+		if (rCh == "-"):
+			if (prevEvent != "d"):
+				nDelO += 1
+				prevEvent = "d"
+			else:
+				nDelX += 1
+		elif (gCh == "-"):
+			if (prevEvent != "i"):
+				nInsO += 1
+				prevEvent = "i"
+			else:
+				nInsX += 1
+		elif (rCh == gCh):
+			nMatch += 1
+			prevEvent = "m"
+		else: # if (rCh != gCh):
+			nMismatch += 1
+			prevEvent = "mm"
+
+	return (nMatch,nMismatch,nInsO,nInsX,nDelO,nDelX)
+
+
+# intersecting_intervals--
+# 
+# nota bene: we assume intervals have been sorted by increases start, but they
+#            may be overlapping
+
+def intersecting_intervals(intervals,start,end):
+	for (s,e) in intervals:
+		if (s >= end):   continue  # tempting to break, but that would be incorrect
+		if (e <= start): continue
+		yield (max(s,start),min(e,end))
+
+
+# slice_alignment--
+
+def slice_alignment(a,gStart,gEnd):
+	aSliced = Alignment()
+	aSliced.readName = a.readName
+	aSliced.rLength  = a.rLength
+	aSliced.chrom    = a.chrom
+	aSliced.strand   = a.strand
+	aSliced.score    = 1
+
+	if (a.strand == "+"):
+		(rText,gText) = (a.rText,a.gText)
+	else:
+		(rText,gText) = (reverse_complement(a.rText),reverse_complement(a.gText))
+
+	startIx = endIx = None
+	rSliceStart = rSliceEnd = None
+	gSliceStart = gSliceEnd = None
+	(rPos,gPos) = (0,a.gStart)
+	for (ix,(rCh,gCh)) in enumerate(zip(rText,gText)):
+		if (gPos >= gStart) and (startIx == None):
+			startIx = ix
+			(rSliceStart,gSliceStart) = (rPos,gPos)
+		if (gPos >= gEnd):
+			endIx = ix
+			(rSliceEnd,gSliceEnd) = (rPos,gPos)
+			break
+
+		if (gCh == "-"):     # insertion
+			rPos += 1
+		elif (rCh == "-"):   # deletion
+			gPos += 1
+		else:                # match or mismatch
+			rPos += 1
+			gPos += 1
+
+	if (endIx == None):
+		endIx = len(a.gText)
+		(rSliceEnd,gSliceEnd) = (rPos,gPos)
+
+	if (a.strand == "+"):
+		aSliced.rText  = rText[startIx:endIx]
+		aSliced.gText  = gText[startIx:endIx]
+	else:
+		aSliced.rText  = reverse_complement(rText[startIx:endIx])
+		aSliced.gText  = reverse_complement(gText[startIx:endIx])
+		(rSliceStart,rSliceEnd) = (a.rEnd-rSliceEnd,a.rEnd-rSliceStart)
+
+	aSliced.rNucs  = "".join([nuc for nuc in aSliced.rText if (nuc != "-")])
+	aSliced.rStart = rSliceStart
+	aSliced.rEnd   = rSliceEnd
+
+	aSliced.gNucs  = "".join([nuc for nuc in aSliced.gText if (nuc != "-")]).upper()
+	aSliced.gStart = gSliceStart
+	aSliced.gEnd   = gSliceEnd
+	aSliced.motif  = "%s:%d-%d%s" \
+	               % (aSliced.chrom,aSliced.gStart,aSliced.gEnd,aSliced.strand)
+
+	return aSliced
 
 
 if __name__ == "__main__": main()
