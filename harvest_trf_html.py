@@ -15,8 +15,8 @@ class Alignment: pass
 def usage(s=None):
 	message = """
 usage: cat <trf_html_output> | harvest_trf_html [options]
-  --motif=<motif>        (cumulative) motifs of interest. Alignments for other
-                         motifs are discarded.
+  --motif=<motif>        (cumulative) motifs of interest; alignments for other
+                         motifs are discarded
                          (if this is not provided, we keep all alignments)
   --minlength=<bp>       discard alignments that don't have long enough repeat
                          (but default, we don't filter by length)

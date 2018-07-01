@@ -7,7 +7,7 @@ genome.
 from sys        import argv,stdin,stdout,stderr,exit
 from os         import path as os_path
 from gzip       import open as gzip_open
-from ncrf_parse import reverse_complement
+from ncrf_parse import reverse_complement,int_with_unit,commatize
 
 class Alignment: pass
 
@@ -25,21 +25,27 @@ usage: reconstruct_simulated_alignments [options]
                            ignored)
   --intervals=<filename>   If this is provided, alignments are truncated to
                            these intervals in the genome (format described
-                           below).
+                           below)
   --catalog=<filename>     If this is provided, alignments are truncated to the
 						   repeat intervals given by the file, and positional
 						   match/mismatch/insert/delete counts are produced. 
 						   The format of the input file is the same as produced
-						   by mock_motif_genome's --catalog option. Positional
+						   by mock_motif_genome's --catalog option; positional
 						   counts are the same as would be produced by NCRF's
-						   --positionalevents option.
+						   --positionalevents option
+  --motif=<motif>          (cumulative) motifs of interest; alignments for other
+                           motifs are discarded; requires --catalog, and the
+                           motif must appear in the same orientation listed in
+                           the catalog
+                           (if this is not provided, we keep all alignments)
   --chromosome[s]=<names>  (cumulative) only reconstruct alignments on the
                            specified "chromosomes";  <names> is a comma-
                            separated list of sequence names in the genome
                            (default is to report intervals on all chromosomes)
-  --minlength=<bp>         discard alignments that aren't long enough on the; length
+  --minlength=<bp>         discard alignments that aren't long enough on the;
                            genome
                            (but default, we don't filter by length)
+  --progress=<number>      periodically report how many reads we've processed
 
 Given a genome and simulated reads sampled by simulate_reads_v4, and the
 corresponding cigars file, alignments are reconstructed. Note that this is
@@ -71,8 +77,10 @@ def main():
 	cigarFilename       = None
 	intervalsFilename   = None
 	intervalsAreCatalog = False
+	motifs              = None
 	chromsOfInterest    = None
 	minLength           = None
+	reportProgress      = None
 	nameFieldW          = 1
 	lengthFieldW        = 1
 	countFieldW         = 1
@@ -99,6 +107,9 @@ def main():
 				usage("--intervals and --catalog are mutually exclusive")
 			intervalsFilename   = argVal
 			intervalsAreCatalog = True
+		elif (arg.startswith("--motif=")):
+			if (motifs == None): motifs = set()
+			motifs.add(argVal)
 		elif (arg.startswith("--chromosome=")) or (arg.startswith("--chromosomes=")) \
 		  or (arg.startswith("--chrom="))      or (arg.startswith("--chroms=")):
 			if (chromsOfInterest == None): chromsOfInterest = set()
@@ -111,6 +122,8 @@ def main():
 				if (minLength == 0): minLength = None
 			except ValueError:
 				usage("bad length in \"%s\"" % arg)
+		elif (arg.startswith("--progress=")):
+			reportProgress = int_with_unit(argVal)
 		elif (arg.startswith("--fields=")) or (arg.startswith("F=")):
 			(nameFieldW,lengthFieldW,countFieldW,rangeFieldW) = argVal.split(",",4)
 			nameFieldW   = max(int(nameFieldW),1)
@@ -141,12 +154,16 @@ def main():
 	if (cigarFilename == None):
 		usage("you need to give me a cigar strings file")
 
+	if (motifs != None) and (not intervalsAreCatalog):
+		usage("--motifs requires --catalog")
+
 	# read the intervals
 	#
 	# nota bene: this can modify chromsOfInterest, restricting it to the
 	# chromosomes in the intervals list
 
 	chromToIntervals = None
+	motifsSeen = set()
 
 	if (intervalsFilename != None):
 		chromToIntervals = {}
@@ -166,6 +183,10 @@ def main():
 				if (strand not in ["+","-"]) or (not is_nucleotide_string(motif)):
 					exit("%s: bad motif at line %d: \"%s\""
 					   % (os_path.basename(argv[0]),lineNumber,tags[0]))
+
+				if (motifs != None):
+					if (motif not in motifs): continue
+					motifsSeen.add(motif)
 			else:
 				motif = strand = None
 
@@ -182,6 +203,12 @@ def main():
 			for chrom in chromsOfInterest:
 				if (chrom not in chromToIntervals):
 					chromsOfInterest.remove(chrom)
+
+	if (motifs != None):
+		for motif in motifs:
+			if (motif not in motifsSeen):
+				print >>stderr, "WARNING \"%s\" was not seen in %s" \
+				              % (motif,intervalsFilename)
 
 	# read the genome
 
@@ -229,7 +256,14 @@ def main():
 	else:
 		readsF = file(readsFilename,"rt")
 
+	readNum = alignmentsReported = 0
 	for (readName,rNucs) in read_fasta_sequences(readsF):
+		readNum += 1
+		if (reportProgress != None) \
+		   and ((readNum == 1) or (readNum % reportProgress == 0)):
+			print >>stderr, "progress: processing read %s (%s alignments reported so far)" \
+			              % (commatize(readNum),commatize(alignmentsReported))
+
 		if (readName not in readNameToCigar):
 			exit("%s: \"%s\" doesn't appear in \"%s\""
 			   % (os_path.basename(argv[0]),readNameToCigar,cigarFilename))
@@ -260,6 +294,7 @@ def main():
 			if (minLength != None) and (a.gEnd-a.gStart < minLength):
 				continue
 			print_alignment(a)
+			alignmentsReported += 1
 		else:
 			intervals = chromToIntervals[chrom]
 			for (s,e,motif,mStrand) in intersecting_intervals(intervals,gStart,gEnd):
@@ -267,6 +302,7 @@ def main():
 				if (minLength != None) and (aSliced.gEnd-aSliced.gStart < minLength):
 					continue
 				print_alignment(aSliced)
+				alignmentsReported += 1
 
 				if ("intervalsanity" in debug):
 					rText    = remove_gaps(aSliced.rText)
@@ -288,6 +324,10 @@ def main():
 
 	readsF.close()
 	print "# ncrf end-of-file"
+
+	if (reportProgress != None):
+		print >>stderr, "progress: %s reads processed (%s alignments reported)" \
+		              % (commatize(readNum),commatize(alignmentsReported))
 
 
 # print_alignment--
