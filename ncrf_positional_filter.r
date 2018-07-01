@@ -9,13 +9,14 @@ do_mx_significance_tests <- function(n,mxFlat,testErrorCounts,effectSize=0.3,pow
 	# n
 	#	is the number of flattened rows (the number of tests to perform)
 	# mxFlat
-	#	is a flattened matrix of the test values; each flattened row has 2*k
-	#	columns, where k is the vector size of a test; thus each flattened row
+	#	is a flattened matrix of the test values; each flattened row has 2*m
+	#	columns, where m is the vector size of a test; thus each flattened row
 	#   has two test vectors, which for our original purposes were "match
 	#	counts" and "error counts"
 	# testErrorCounts
-	#	is True  if we're to test the second test vector in each flattened row
-	#	is False if we're to test the first  test vector in each flattened row
+	#	is TRUE  if we're to test the second test vector in each flattened row
+	#	is FALSE if we're to test the first  test vector in each flattened row
+	#   in either case, only one of the two vectors is tested
 
 	rowLen = length(mxFlat)/n
 	for (row in 1:n)
@@ -47,7 +48,6 @@ assess_significance <- function(case,effectSize=0.3,power=0.8,verbose=F)
 	#   FALSE ==> reject null hypothesis;       the counts are biased
 	#   NA    ==> unable to run the test
 
-	warning(case)
 	if (any(case<5)) return (NA)
 	stopifnot(case>=5)
 	df <- length(case)-1
