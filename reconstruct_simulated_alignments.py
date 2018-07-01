@@ -668,11 +668,10 @@ def positonal_stats(a,motif,mStrand):
 	mPos = (-offset) % motifLen
 
 	positionalStats = [None] * motifLen
-	for mPos in xrange(motifLen):
-		positionalStats[mPos] = {"nuc":motif[mPos],
-		                         "m":0, "mm":0, "i":0, "d":0,
-		                         "mmA":0, "mmC":0, "mmG":0, "mmT":0}
-
+	for mIx in xrange(motifLen):
+		positionalStats[mIx] = {"nuc":motif[mIx],
+		                        "m":0, "mm":0, "i":0, "d":0,
+		                        "mmA":0, "mmC":0, "mmG":0, "mmT":0}
 	for (rCh,gCh) in zip(rText,gText):
 		if (gCh == "-"):     # insertion
 			positionalStats[mPos]["i"] += 1
@@ -687,8 +686,8 @@ def positonal_stats(a,motif,mStrand):
 			positionalStats[mPos]["mm"+rCh] += 1
 			mPos = (mPos+1) % motifLen
 
-	for mPos in xrange(motifLen):
-		stats = positionalStats[mPos]
+	for mIx in xrange(motifLen):
+		stats = positionalStats[mIx]
 		stats["x"] = stats["mm"] + stats["i"] + stats["d"]
 		denom = (stats["m"] + stats["x"])
 		stats["mRatio"] = float(stats["m"]) / (stats["m"] + stats["x"]) if (denom != 0) \
@@ -700,12 +699,37 @@ def positonal_stats(a,motif,mStrand):
 # print_positonal_stats--
 
 def print_positonal_stats(positionalStats):
+	fieldW = {}
+
 	for (mPos,stats) in enumerate(positionalStats):
-		s =  ["# position %d [%s]" % (mPos,stats["nuc"])]
-		s += ["# mRatio=%.1f%%" % (100*stats["mRatio"])]
+		f = "# position %d [%s]" % (mPos,stats["nuc"])
+		if ("position" not in fieldW) or (len(f) > fieldW["position"]):
+			fieldW["position"] = len(f)
+
+		f = "mRatio=%.1f%%" % (100*stats["mRatio"])
+		if ("mRatio" not in fieldW) or (len(f) > fieldW["mRatio"]):
+			fieldW["mRatio"] = len(f)
+
 		for field in ["m","mm","i","d","mmA","mmC","mmG","mmT","x"]:
-			s += ["%s=%d" % (field,stats[field])]
-		print " ".join(s)
+			f = "%s=%d" % (field,stats[field])
+			if (field not in fieldW) or (len(f) > fieldW[field]):
+				fieldW[field] = len(f)
+
+	for (mPos,stats) in enumerate(positionalStats):
+		s = []
+
+		f = "# position %d [%s]" % (mPos,stats["nuc"])
+		s += ["%-*s" % (fieldW["position"],f)]
+
+		f = "mRatio=%.1f%%" % (100*stats["mRatio"])
+		s += ["%-*s" % (fieldW["mRatio"],f)]
+
+		for field in ["m","mm","i","d","mmA","mmC","mmG","mmT","x"]:
+			f = "%s=%d" % (field,stats[field])
+			s += ["%-*s" % (fieldW[field],f)]
+
+		s = (" ".join(s)).rstrip()
+		print s
 
 
 # remove_gaps--
