@@ -335,13 +335,13 @@ def print_alignment(a):
 	       lengthW, rLengthStr,
 	       countW,  rBaseCountStr,
 	       rangeW,  rangeStr,
-	       a.rText)
+	       rText)
 	print "%-*s %-*s %-*s %-*s %s" \
 	    % (nameW,   motifWithStrand,
 	       lengthW, "",
 	       countW,  gBaseCountStr,
 	       rangeW,  scoreStr,
-	       a.gText)
+	       gText)
 
 
 def read_intervals(f):
