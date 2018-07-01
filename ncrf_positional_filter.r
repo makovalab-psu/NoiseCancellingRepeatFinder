@@ -33,7 +33,7 @@ do_mx_significance_tests <- function(n,mxFlat,testErrorCounts,effectSize=0.3,pow
 			e = s + (rowLen/2) - 1
 			}
 		if (verbose)
-			write(paste("row:",row,"events:",paste(mxFlat[s:e],collapse=" ")), stderr())
+			write(paste("row",row,"events:",paste(mxFlat[s:e],collapse=" ")), stderr())
 		cat(assess_significance(mxFlat[s:e],effectSize=effectSize,power=power,verbose=verbose))
 		cat('\n')
 		}
