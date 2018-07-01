@@ -211,29 +211,57 @@ def main():
 
 		accepted += sigBatch
 
+	resultCount = {True:0, False:0, None:0}
+	for (alignmentNum,a) in enumerate(alignmentList):
+		testResult = accepted[alignmentNum]
+		resultCount[testResult] += 1
+
 	# process the alignments and their assessments
 	# $$$ untested alignments should be processed by some other test -- for
 	#     example (if we're testing by error counts), a perfect alignment
 	#     currently gets discarded because it can't be tested
 
 	if (reportAs == "matrix"):
-		# see note [1] above for the format of the matrix file
-		mapping = {True:"not_rejected", False:"rejected", None:"untested"}
-		for (alignmentNum,a) in enumerate(alignmentList):
-			testResult = accepted[alignmentNum]
-			vec = [a.lineNumber,mapping[testResult]] + mxMatrix[alignmentNum]
-			print "\t".join(map(str,vec))
+		resultMapping = {True:"not_rejected", False:"rejected", None:"untested"}
 	else: # if (reportAs == "ncrf"):
 		if (testWhich == "matches-insertions"):
-			mapping = {True:  "match-insert uniformity not rejected",
+			resultMapping = {True:  "match-insert uniformity not rejected",
 			           False: "match-insert uniformity rejected",
 			           None:  "untested"}
 		elif (testWhich == "errors"):
-			mapping = {True:  "error uniformity not rejected",
+			resultMapping = {True:  "error uniformity not rejected",
 			           False: "error uniformity rejected",
 			           None:  "untested"}
 		else: # if (testWhich == "matches"):
-			mapping = {True:  "match uniformity not rejected",
+			resultMapping = {True:  "match uniformity not rejected",
+			           False: "match uniformity rejected",
+			           None:  "untested"}
+
+	resultNameW = max([len(resultMapping[testResult]) for testResult in resultMapping])
+	for testResult in [True,False,None]:
+		resultName = resultMapping[testResult]
+		count      = resultCount[testResult]
+		print >>stderr, "%-*s %d (%.2f%%)" \
+					  % (resultNameW+1,"%s:" % resultName,count,100.0*count/numAlignments)
+
+	if (reportAs == "matrix"):
+		# see note [1] above for the format of the matrix file
+		resultMapping = {True:"not_rejected", False:"rejected", None:"untested"}
+		for (alignmentNum,a) in enumerate(alignmentList):
+			testResult = accepted[alignmentNum]
+			vec = [a.lineNumber,resultMapping[testResult]] + mxMatrix[alignmentNum]
+			print "\t".join(map(str,vec))
+	else: # if (reportAs == "ncrf"):
+		if (testWhich == "matches-insertions"):
+			resultMapping = {True:  "match-insert uniformity not rejected",
+			           False: "match-insert uniformity rejected",
+			           None:  "untested"}
+		elif (testWhich == "errors"):
+			resultMapping = {True:  "error uniformity not rejected",
+			           False: "error uniformity rejected",
+			           None:  "untested"}
+		else: # if (testWhich == "matches"):
+			resultMapping = {True:  "match uniformity not rejected",
 			           False: "match uniformity rejected",
 			           None:  "untested"}
 		numKept = 0
@@ -246,7 +274,7 @@ def main():
 				if (testResult != True): continue
 
 			if (discardWhich == "none"):
-				chiSquaredInfo = "# positional chi-squared: %s" % mapping[testResult]
+				chiSquaredInfo = "# positional chi-squared: %s" % resultMapping[testResult]
 				(startIx,endIx) = a.positional_stats_indexes()
 				a.lines.insert(endIx,chiSquaredInfo)
 
@@ -255,8 +283,8 @@ def main():
 			print a
 			numKept += 1
 
-		print >>stderr, "(%s kept %d of %d alignments, %.2f%%)" \
-		              % (os_path.basename(argv[0]),numKept,numAlignments,100.0*numKept/numAlignments)
+		print >>stderr, "kept %d of %d alignments, %.2f%%" \
+					  % (numKept,numAlignments,100.0*numKept/numAlignments)
 
 		if (requireEof):
 			print "# ncrf end-of-file"
