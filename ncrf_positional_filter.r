@@ -69,6 +69,7 @@ assess_significance <- function(case,effectSize=0.3,power=0.8,verbose=F)
 
 	alpha <- 0.0000000001 # default alpha value
 	tryCatch(
+		# ***** need to consider whether this should be treated as "unable to run the test" *****
 		# Calculating alpha value for fixed power
 		alpha <- pwr.chisq.test(w=effectSize,df=df,N=sampleSize,power=power,sig.level=NULL)$sig.level
 		,
