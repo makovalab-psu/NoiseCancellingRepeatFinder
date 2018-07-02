@@ -30,7 +30,7 @@ from ncrf_parse import alignments,parse_probability,int_with_unit
 #
 # [2] Justification for "matches-insertions" (as opposed to just "matches").
 #     When NCRF counts matches, a deletion (a base deleted from the motif)
-#     results in a decrease of the count of matches at that position.  There is
+#     outcomes in a decrease of the count of matches at that position.  There is
 #     no similar effect for an insertion (a base inserted into the motif).
 #     Thus if we base our test solely on matches, insertions will not
 #     contribute to the test.  Subtracting insertion counts from match counts
@@ -47,13 +47,14 @@ usage: cat <output_from_NCRF> | ncrf_positional_filter [options]
   --discard:good        discard the "good" alignments instead of the "bad" ones
                         (by default we discard the "bad" alignments) 
   --discard:none        don't discard any alignments, just report the test
-                        results (see below for how they are reported) 
+                        outcomes (see below for how they are reported) 
   --test:matches        perform the test using match counts
                         (this is the default)
   --test:errors         perform the test using error counts; this may increase
                         the likelihood that the test cannot be performed for
                         some alignments
   --test:matches-insertions perform the test using match counts less insertions
+  --warn:untested       report each untestable alignment as a warning
   --head=<number>       limit the number of input alignments
   --batch=<number>      number of input alignments processed by each call to R;
                         our ability to call R fails if the command line we pass
@@ -72,7 +73,7 @@ The input alignments must include position event information.  This can be
 accomplished by using the --positionalevents option of Noise Cancelling Repeat
 Finder.
 
-When test results are reported for --discard:none, one of the following lines
+When test outcomes are reported for --discard:none, one of the following lines
 is added to each alignment:
 # positional chi-squared: match uniformity rejected
 # positional chi-squared: match uniformity not rejected
@@ -90,15 +91,16 @@ def main():
 
 	# parse the command line
 
-	effectSize   = 0.3
-	power        = 0.8
-	discardWhich = "bad"
-	testWhich    = "matches"
-	headLimit    = None
-	batchSize    = 30
-	reportAs     = "ncrf"
-	requireEof   = True
-	debug        = []
+	effectSize     = 0.3
+	power          = 0.8
+	discardWhich   = "bad"
+	testWhich      = "matches"
+	warnOnUntested = False
+	headLimit      = None
+	batchSize      = 30
+	reportAs       = "ncrf"
+	requireEof     = True
+	debug          = []
 
 	for arg in argv[1:]:
 		if ("=" in arg):
@@ -121,6 +123,8 @@ def main():
 		elif (arg in ["--test:matches-insertions","--test=matches-insertions",
 		              "--test:m-i","--test=m-i"]):
 			testWhich = "matches-insertions"
+		elif (arg == "--warn:untested") or (arg == "--warn=matrix"):
+			warnOnUntested = True
 		elif (arg.startswith("--head=")):
 			headLimit = int_with_unit(argVal)
 		elif (arg.startswith("--batch=")):
@@ -205,16 +209,23 @@ def main():
 			   % (os_path.basename(argv[0]),batchStartIx,batchEndIx,sigBatch))
 
 		if (len(sigBatch) != batchEndIx-batchStartIx):
-			exit(("%s: internal error: number of test results reported by R (%d)"
+			exit(("%s: internal error: number of test outcomes reported by R (%d)"
 			       + "\n  .. doesn't match the number of tests given to R (%d)")
 			   % (os_path.basename(argv[0]),len(sigBatch),batchEndIx-batchStartIx))
 
 		accepted += sigBatch
 
-	resultCount = {True:0, False:0, None:0}
+		if (warnOnUntested):
+			for alignmentNum in xrange(batchStartIx,batchEndIx):
+				testOutcome = accepted[alignmentNum]
+				if (testOutcome == None):
+					print >>stderr, "WARNING: alignment number %d (at line %d) could not be tested" \
+					              % (alignmentNum,1+alignmentList[alignmentNum].lineNumber)
+
+	outcomeCount = {True:0, False:0, None:0}
 	for (alignmentNum,a) in enumerate(alignmentList):
-		testResult = accepted[alignmentNum]
-		resultCount[testResult] += 1
+		testOutcome = accepted[alignmentNum]
+		outcomeCount[testOutcome] += 1
 
 	# process the alignments and their assessments
 	# $$$ untested alignments should be processed by some other test -- for
@@ -222,59 +233,46 @@ def main():
 	#     currently gets discarded because it can't be tested
 
 	if (reportAs == "matrix"):
-		resultMapping = {True:"not_rejected", False:"rejected", None:"untested"}
+		outcomeMapping = {True:"not_rejected", False:"rejected", None:"untested"}
 	else: # if (reportAs == "ncrf"):
 		if (testWhich == "matches-insertions"):
-			resultMapping = {True:  "match-insert uniformity not rejected",
-			           False: "match-insert uniformity rejected",
-			           None:  "untested"}
+			outcomeMapping = {True:  "match-insert uniformity not rejected",
+			                  False: "match-insert uniformity rejected",
+			                  None:  "untested"}
 		elif (testWhich == "errors"):
-			resultMapping = {True:  "error uniformity not rejected",
-			           False: "error uniformity rejected",
-			           None:  "untested"}
+			outcomeMapping = {True:  "error uniformity not rejected",
+			                  False: "error uniformity rejected",
+			                  None:  "untested"}
 		else: # if (testWhich == "matches"):
-			resultMapping = {True:  "match uniformity not rejected",
-			           False: "match uniformity rejected",
-			           None:  "untested"}
+			outcomeMapping = {True:  "match uniformity not rejected",
+			                  False: "match uniformity rejected",
+			                  None:  "untested"}
 
-	resultNameW = max([len(resultMapping[testResult]) for testResult in resultMapping])
-	for testResult in [True,False,None]:
-		resultName = resultMapping[testResult]
-		count      = resultCount[testResult]
+	outcomeNameW = max([len(outcomeMapping[testOutcome]) for testOutcome in outcomeMapping])
+	for testOutcome in [True,False,None]:
+		outcomeName = outcomeMapping[testOutcome]
+		count       = outcomeCount[testOutcome]
 		print >>stderr, "%-*s %d (%.2f%%)" \
-					  % (resultNameW+1,"%s:" % resultName,count,100.0*count/numAlignments)
+					  % (outcomeNameW+1,"%s:" % outcomeName,count,100.0*count/numAlignments)
 
 	if (reportAs == "matrix"):
 		# see note [1] above for the format of the matrix file
-		resultMapping = {True:"not_rejected", False:"rejected", None:"untested"}
 		for (alignmentNum,a) in enumerate(alignmentList):
-			testResult = accepted[alignmentNum]
-			vec = [a.lineNumber,resultMapping[testResult]] + mxMatrix[alignmentNum]
+			testOutcome = accepted[alignmentNum]
+			vec = [a.lineNumber,outcomeMapping[testOutcome]] + mxMatrix[alignmentNum]
 			print "\t".join(map(str,vec))
 	else: # if (reportAs == "ncrf"):
-		if (testWhich == "matches-insertions"):
-			resultMapping = {True:  "match-insert uniformity not rejected",
-			           False: "match-insert uniformity rejected",
-			           None:  "untested"}
-		elif (testWhich == "errors"):
-			resultMapping = {True:  "error uniformity not rejected",
-			           False: "error uniformity rejected",
-			           None:  "untested"}
-		else: # if (testWhich == "matches"):
-			resultMapping = {True:  "match uniformity not rejected",
-			           False: "match uniformity rejected",
-			           None:  "untested"}
 		numKept = 0
 		isFirst = True
 		for (alignmentNum,a) in enumerate(alignmentList):
-			testResult = accepted[alignmentNum]
+			testOutcome = accepted[alignmentNum]
 			if (discardWhich == "good"):
-				if (testResult == True): continue
+				if (testOutcome == True): continue
 			elif (discardWhich == "bad"):
-				if (testResult != True): continue
+				if (testOutcome != True): continue
 
 			if (discardWhich == "none"):
-				chiSquaredInfo = "# positional chi-squared: %s" % resultMapping[testResult]
+				chiSquaredInfo = "# positional chi-squared: %s" % outcomeMapping[testOutcome]
 				(startIx,endIx) = a.positional_stats_indexes()
 				a.lines.insert(endIx,chiSquaredInfo)
 
