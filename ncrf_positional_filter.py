@@ -360,8 +360,9 @@ def mx_significance_tests(mxMatrix,testWhich,effectSize,power):
 	rCommand =  []
 	rCommand += ["source('%s/ncrf_positional_filter.r')" % selfPath]
 	rCommand += ["mxFlat = c(%s)" % ",".join(map(str,flatten(mxMatrix)))]
-	rCommand += ["do_mx_significance_tests(%d,mxFlat,%s,%.10f,%.10f)" \
-	           % (n,testErrorCounts,effectSize,power)]
+	rArgs = "%d,mxFlat,%s,%.10f,%.10f" % (n,testErrorCounts,effectSize,power)
+	if ("rverbose" in debug): rArgs += ",verbose=T"
+	rCommand += ["do_mx_significance_tests(%s)" % rArgs]
 
 	# run that R program
 

@@ -34,8 +34,11 @@ do_mx_significance_tests <- function(n,mxFlat,testErrorCounts,effectSize=0.3,pow
 			e = s + (rowLen/2) - 1
 			}
 		if (verbose)
-			write(paste("row",row,"events:",paste(mxFlat[s:e],collapse=" ")), stderr())
-		cat(assess_significance(mxFlat[s:e],effectSize=effectSize,power=power,verbose=verbose))
+			write(paste("row",row,"events:",paste(mxFlat[s:e],collapse=",")), stderr())
+		result = assess_significance(mxFlat[s:e],effectSize=effectSize,power=power)
+		if (verbose) # nb: assess_significance's verbose output fails to get out
+			write(paste(" ~ alpha:",result$alpha,"pvalue:",result$pvalue,"df:",result$df,"sampleSize:",result$sampleSize), stderr())
+		cat(result$outcome)
 		cat('\n')
 		}
 	}
@@ -44,11 +47,22 @@ do_mx_significance_tests <- function(n,mxFlat,testErrorCounts,effectSize=0.3,pow
 assess_significance <- function(case,effectSize=0.3,power=0.8,verbose=F)
 	{
 	# returns:
-	#   TRUE  ==> don't reject null hypothesis; the counts are uniform
-	#   FALSE ==> reject null hypothesis;       the counts are biased
-	#   NA    ==> unable to run the test
+	#   outcome = TRUE  ==> don't reject null hypothesis; the counts are uniform
+	#           = FALSE ==> reject null hypothesis;       the counts are biased
+	#           = NA    ==> unable to run the test
+	#   pvalue          ==> chisq.test's pvalue
+	#   alpha           ==> alpha used for the test
+	#   df              ==> the test's degrees of freedom
+	#   sampleSize      ==> number of items
 
-	if (any(case<5)) return (NA)
+	if (any(case<5))
+		{
+	    return (list(outcome    = NA,
+	                 pvalue     = NA,
+	                 alpha      = NA,
+	                 df         = NA,
+	                 sampleSize = NA))
+		}
 	stopifnot(case>=5)
 	df <- length(case)-1
 	sampleSize <- sum(case)
@@ -72,6 +86,10 @@ assess_significance <- function(case,effectSize=0.3,power=0.8,verbose=F)
 		write(paste("alpha:",alpha,"pvalue:",pvalue,"df:",df,"sampleSize:",sampleSize), stderr())
 	# (pvalue <= alpha) ==> reject null hypothesis;       the counts are biased
 	# (pvalue >  alpha) ==> don't reject null hypothesis; the counts are uniform
-	return (pvalue>alpha)
+    return (list(outcome    = pvalue>alpha,
+                 pvalue     = pvalue,
+                 alpha      = alpha,
+                 df         = df,
+                 sampleSize = sampleSize))
 	}
 
