@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 """
-Filter Noise Cancelling Repeat Finder alignments, using positional match-and-
-error-counts to discard alignments which aren't a good match for the specified
-motif unit.
+Filter Noise Cancelling Repeat Finder alignments, discarding alignments that
+don't (seem to) have uniformly distributed matches across the motif unit.
 """
 
 # TODO: pass data to R via a temporary file, rather than on the Rscript
@@ -15,7 +14,15 @@ from ncrf_parse import alignments,parse_probability,int_with_unit
 
 # Implementation Notes:
 #
-# [1] Here we describe the format of the file produced by the unadvertised
+# [1] Justification for "matches-insertions" (as opposed to just "matches").
+#     When NCRF counts matches, a deletion (a base deleted from the motif)
+#     outcomes in a decrease of the count of matches at that position.  There is
+#     no similar effect for an insertion (a base inserted into the motif).
+#     Thus if we base our test solely on matches, insertions will not
+#     contribute to the test.  Subtracting insertion counts from match counts
+#     gives insertions the same effect as deletions.
+#
+# [2] Here we describe the format of the file produced by the unadvertised
 #     option --report:matrix.  The reason this option isn't advertised is that
 #     is should only be useful to developers testing implementation details of
 #     the underlying chi-squared test.
@@ -27,18 +34,10 @@ from ncrf_parse import alignments,parse_probability,int_with_unit
 #     columns M+3 thru 2M+2 are the positional error counts. We assume all rows
 #     have the same number of columns, i.e. that the same motif length is
 #     represented in all rows.
-#
-# [2] Justification for "matches-insertions" (as opposed to just "matches").
-#     When NCRF counts matches, a deletion (a base deleted from the motif)
-#     outcomes in a decrease of the count of matches at that position.  There is
-#     no similar effect for an insertion (a base inserted into the motif).
-#     Thus if we base our test solely on matches, insertions will not
-#     contribute to the test.  Subtracting insertion counts from match counts
-#     gives insertions the same effect as deletions.
 
 def usage(s=None):
 	message = """
-usage: cat <output_from_NCRF> | ncrf_positional_filter [options]
+usage: cat <output_from_NCRF> | error_uniformity_filter [options]
   --effectsize=<value>  effect size for chi-squared test
                         (default is 0.3)
   --power=<probability> "power of test" for chi-squared test, 1 minus Type II
@@ -63,8 +62,8 @@ usage: cat <output_from_NCRF> | ncrf_positional_filter [options]
 
 In a "true" alignment to a given motif unit, we expect the errors to be
 distributed randomly and uniformly among the positions in the unit.  (That is
-an underlying assumption, but might not itself be true.)  This program
-discards alignments that fail a statistical test based on that assumption.
+an underlying assumption, but might not be true.)  This program discards
+alignments that fail a statistical test based on that assumption.
 
 Since error counts may be too small for the statistical test, we use match
 counts instead.
@@ -358,7 +357,7 @@ def mx_significance_tests(mxMatrix,testWhich,effectSize,power):
 	selfPath = os_path.dirname(os_path.realpath(__file__))
 
 	rCommand =  []
-	rCommand += ["source('%s/ncrf_positional_filter.r')" % selfPath]
+	rCommand += ["source('%s/error_uniformity_filter.r')" % selfPath]
 	rCommand += ["mxFlat = c(%s)" % ",".join(map(str,flatten(mxMatrix)))]
 	rArgs = "%d,mxFlat,%s,%.10f,%.10f" % (n,testErrorCounts,effectSize,power)
 	if ("rverbose" in debug): rArgs += ",verbose=T"

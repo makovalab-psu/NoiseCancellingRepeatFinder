@@ -1,5 +1,5 @@
 #===
-# see ncrf_positional_filter.py to see how this is used
+# see error_uniformity_filter.py to see how this is used
 #===
 
 require(pwr)
