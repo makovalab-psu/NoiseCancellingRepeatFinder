@@ -37,7 +37,7 @@ do_mx_significance_tests <- function(n,mxFlat,testErrorCounts,effectSize=0.3,pow
 			write(paste("row",row,"events:",paste(mxFlat[s:e],collapse=",")), stderr())
 		result = assess_significance(mxFlat[s:e],effectSize=effectSize,power=power)
 		if (verbose) # nb: assess_significance's verbose output fails to get out
-			write(paste(" ~ alpha:",result$alpha,"pvalue:",result$pvalue,"df:",result$df,"sampleSize:",result$sampleSize), stderr())
+			write(paste("alpha:",result$alpha,"pvalue:",result$pvalue,"df:",result$df,"sampleSize:",result$sampleSize), stderr())
 		cat(result$outcome)
 		cat('\n')
 		}
@@ -79,6 +79,7 @@ assess_significance <- function(case,effectSize=0.3,power=0.8,verbose=F)
 			{
 			message("Uniroot problem: alpha will remain at the minimum value of 0.0000000001.")
 			message(error_message)
+			message("")  # creates a newline after error_message
 		  	}
 		)
 
