@@ -20,24 +20,35 @@ defaultPrngSeed = "NCRF.error_uniformity_filter"
 #
 # [1] Justification for "matches-insertions" (as opposed to just "matches").
 #     When NCRF counts matches, a deletion (a base deleted from the motif)
-#     outcomes in a decrease of the count of matches at that position.  There is
+#     outcomes in a decrease of the count of matches at that position. There is
 #     no similar effect for an insertion (a base inserted into the motif).
 #     Thus if we base our test solely on matches, insertions will not
-#     contribute to the test.  Subtracting insertion counts from match counts
+#     contribute to the test. Subtracting insertion counts from match counts
 #     gives insertions the same effect as deletions.
 #
 # [2] Here we describe the format of the file produced by the unadvertised
-#     option --report:matrix.  The reason this option isn't advertised is that
+#     option --report:matrix. The reason this option isn't advertised is that
 #     is should only be useful to developers testing implementation details of
 #     the underlying chi-squared test.
 #
 #     The file has NO header line and one row for each alignment;  2M+2 columns
-#     per row, where M is the motif length.  Column 1 is the line number of the
-#     alignment in the incoming file.  Column 2 is the outcome of the test. 
+#     per row, where M is the motif length. Column 1 is the line number of the
+#     alignment in the incoming file. Column 2 is the outcome of the test. 
 #     Columns 3 thru M+2 are positional match counts for that alignment, and
 #     columns M+3 thru 2M+2 are the positional error counts. We assume all rows
 #     have the same number of columns, i.e. that the same motif length is
 #     represented in all rows.
+#
+# [3] The min-max method introduced some non-determinism. It is expected that
+#     this will only affect alignments near the pass/fail boundary. Whether
+#     an alignment is passed or failed depends to some extent on the state of
+#     the PRNG. This state is affected by the initial seed (which will be the
+#     same for all runs unless the user sets it) and how many times the PRNG
+#     has been called in processing previous alignments. Thus, even without
+#     changing the seeding, an alignment processed in different runs with
+#     different parameters (or appearing at a different relative position in
+#     the input) is processed with a different PRNG state. It is likely that
+#     alignment not close to the pass/fail boundary would not be affected.
 
 def usage(s=None):
 	message = """
@@ -74,14 +85,14 @@ usage: cat <output_from_NCRF> | error_uniformity_filter [options]
                         (default is 30)
 
 In a "true" alignment to a given motif unit, we expect the errors to be
-distributed randomly and uniformly among the positions in the unit.  (That is
+distributed randomly and uniformly among the positions in the unit. (That is
 an underlying assumption, but might not be true.)  This program discards
 alignments that fail a statistical test based on that assumption.
 
 Since error counts may be too small for the statistical test, we use match
 counts instead.
 
-The input alignments must include position event information.  This can be
+The input alignments must include position event information. This can be
 accomplished by using the --positionalevents option of Noise Cancelling Repeat
 Finder.
 
@@ -288,7 +299,7 @@ def main():
 					  % (outcomeNameW+1,"%s:" % outcomeName,count,100.0*count/numAlignments)
 
 	if (reportAs == "matrix"):
-		# see note [1] above for the format of the matrix file
+		# see note [2] above for the format of the matrix file
 		for (alignmentNum,a) in enumerate(alignmentList):
 			testOutcome = accepted[alignmentNum]
 			vec = [a.lineNumber,outcomeMapping[testOutcome]] + mxMatrix[alignmentNum]
@@ -336,6 +347,7 @@ def collect_alignments(f,testWhich,headLimit=None,requireEof=True):
 			break
 
 		if (testWhich == "matches-insertions"):
+			# note [1]
 			mxRow = positional_error_vector(a,modified="m-i")
 		else:
 			mxRow = positional_error_vector(a)
@@ -394,7 +406,7 @@ def positional_error_vector(a,modified=None):
 #	of alignments.
 #
 # Input is an Nx2M matrix, where N is the number of alignments and M is the
-# length of the aligned motif unit.  The first M columns are the positional
+# length of the aligned motif unit. The first M columns are the positional
 # counts for matches ("m"), and the final M columns are the positional counts
 # for errors ("x").
 #
@@ -405,7 +417,7 @@ def positional_error_vector(a,modified=None):
 # the reason for the failure (hopefully).
 #
 # Otherwise, output is an N-element vector, containing acceptance/rejection for
-# each row of the input.  Each entry is one of the following:
+# each row of the input. Each entry is one of the following:
 #   True  ==> don't reject null hypothesis; the counts are uniform
 #   False ==> reject null hypothesis;       the counts are biased
 #   None  ==> unable to run the test
@@ -495,7 +507,7 @@ def shell_command_exists(commandName):
 #	"Judge" whether alignments in a batch are uniform or not.
 #
 # Input is an Nx2M matrix, where N is the number of alignments and M is the
-# length of the aligned motif unit.  The first M columns are the positional
+# length of the aligned motif unit. The first M columns are the positional
 # counts for matches ("m"), and the final M columns are the positional counts
 # for errors ("x").
 #
@@ -506,7 +518,7 @@ def shell_command_exists(commandName):
 # the reason for the failure (hopefully).
 #
 # Otherwise, output is an N-element vector, containing acceptance/rejection for
-# each row of the input.  Each entry is one of the following:
+# each row of the input. Each entry is one of the following:
 #   True  ==> don't reject null hypothesis; the counts are uniform
 #   False ==> reject null hypothesis;       the counts are biased
 #   None  ==> unable to run the test
