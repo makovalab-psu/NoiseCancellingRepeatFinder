@@ -556,6 +556,14 @@ def shell_command_exists(commandName):
 #   True  ==> don't reject null hypothesis; the counts are uniform
 #   False ==> reject null hypothesis;       the counts are biased
 #   None  ==> unable to run the test
+#
+# Note that for a given alignment, we stop generating random count vectors as
+# soon as we have a range of min and max that will contain the alignment's min
+# and max. In many cases this happens in the first few trials if the alignment
+# will pass (is uniform); alignments that fail will necessarily require the
+# full complement of trials. In one test with motifLen=5 and alignments longer
+# than 500 bp, the average number of trials before an alignment passed was just
+# under 50.
 
 def min_max_tests(aBatch,mxBatch,batchStartIx,testWhich,numTrials):
 	motifLen = len(mxBatch[0]) / 2
@@ -574,6 +582,8 @@ def min_max_tests(aBatch,mxBatch,batchStartIx,testWhich,numTrials):
 		alignmentLen = len(aBatch[rowIx].seqText)
 
 		minTrialCount = maxTrialCount = None
+		minProvenOk = maxProvenOk = False
+		trialsMade = 0
 		for trialNum in xrange(numTrials):
 			positionToCount = [0] * motifLen  # (list performed faster than dict)
 
@@ -582,23 +592,29 @@ def min_max_tests(aBatch,mxBatch,batchStartIx,testWhich,numTrials):
 				mPos = (aPos + motifOffset) % motifLen
 				positionToCount[mPos] += 1
 
-			trialMin = min([positionToCount[pos] for pos in xrange(motifLen)])
-			trialMax = max([positionToCount[pos] for pos in xrange(motifLen)])
+			trialsMade += 1
 
-			if (minTrialCount == None) or (trialMin < minTrialCount):
-				minTrialCount = trialMin
-			if (maxTrialCount == None) or (trialMax > maxTrialCount):
-				maxTrialCount = trialMax
+			if (not minProvenOk):
+				trialMin = min([positionToCount[pos] for pos in xrange(motifLen)])
+				if (minTrialCount == None) or (trialMin < minTrialCount):
+					minTrialCount = trialMin
+					minProvenOk = (minCount >= minTrialCount)
+			if (not maxProvenOk):
+				trialMax = max([positionToCount[pos] for pos in xrange(motifLen)])
+				if (maxTrialCount == None) or (trialMax > maxTrialCount):
+					maxTrialCount = trialMax
+					maxProvenOk = (maxCount <= maxTrialCount)
 
-		if (minCount >= minTrialCount) and (maxCount <= maxTrialCount):
-			results[rowIx] = True
-		else:
-			results[rowIx] = False
+			if (minProvenOk) and (maxProvenOk): break
+
+		results[rowIx] = (minCount >= minTrialCount) and (maxCount <= maxTrialCount)
 
 		if   ("min-max" in debug) \
 		  or (("min-max:fail" in debug) and (not results[rowIx])):
-			print >>stderr, "[%d] %d/%d <%s> real:%d..%d random:%d..%d %s" \
-			              % (1+batchStartIx+rowIx,numEvents,alignmentLen,
+			print >>stderr, "[%d] (%d trials) %d/%d <%s> real:%d..%d random:%d..%d %s" \
+			              % (1+batchStartIx+rowIx,
+			                 trialsMade,
+			                 numEvents,alignmentLen,
 			                 " ".join(map(str,testCounts)),
 			                 minCount,maxCount,minTrialCount,maxTrialCount,
 			                 "pass" if (results[rowIx]) else "fail")
