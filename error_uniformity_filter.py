@@ -97,7 +97,7 @@ accomplished by using the --positionalevents option of Noise Cancelling Repeat
 Finder.
 
 When test outcomes are reported for --discard:none, one of the following lines
-is added to each alignment:
+is added to each alignment ("chi-squared" may be replaced by "min-max"):
 # positional chi-squared: match uniformity rejected
 # positional chi-squared: match uniformity not rejected
 # positional chi-squared: untested
@@ -193,6 +193,14 @@ def main():
 	if (reportAs == "matrix"):
 		discardWhich = "none"
 
+	if (testMethod == "chi-squared"):
+		testDescription = "positional chi-squared"
+	elif (testMethod == "min-max"):
+		testDescription = "positional min-max"
+	else:
+		exit("%s: internal error: unrecognized test method: \"%s\""
+		   % (os_path.basename(argv[0]),testMethod))
+
 	# initialize the PRNG, if needed
 
 	if (testMethod == "min-max"):
@@ -244,16 +252,13 @@ def main():
 				        + " (with alignment batch %d..%d)"
 				        + "\nHere's what R reported:\n%s")
 				   % (os_path.basename(argv[0]),batchStartIx,batchEndIx,resultBatch))
-		elif (testMethod == "min-max"):
+		else:  # if (testMethod == "min-max"):
 			resultBatch = min_max_tests(aBatch,mxBatch,testWhich,numTrials)
 			if (type(resultBatch) == str):
 				exit(("%s: internal error: having trouble with min-max test"
 				        + " (with alignment batch %d..%d)"
 				        + "\nHere's what was reported:\n%s")
 				   % (os_path.basename(argv[0]),batchStartIx,batchEndIx,resultBatch))
-		else:
-			exit("%s: internal error: unrecognized test method: \"%s\""
-			   % (os_path.basename(argv[0]),testMethod))
 
 		if (len(resultBatch) != batchEndIx-batchStartIx):
 			exit(("%s: internal error: number of test outcomes reported by R (%d)"
@@ -318,9 +323,9 @@ def main():
 				if (testOutcome != True): continue
 
 			if (discardWhich == "none"):
-				chiSquaredInfo = "# positional chi-squared: %s" % outcomeMapping[testOutcome]
+				testInfo = "# %s: %s" % (testDescription,outcomeMapping[testOutcome])
 				(startIx,endIx) = a.positional_stats_indexes()
-				a.lines.insert(endIx,chiSquaredInfo)
+				a.lines.insert(endIx,testInfo)
 
 			if (isFirst): isFirst = False
 			else:         print
