@@ -167,6 +167,8 @@ def main():
 			batchSize = int(argVal)
 		elif (arg == "--report:matrix") or (arg == "--report=matrix"):   # (unadvertised)
 			reportAs = "matrix"
+		elif (arg == "--report:silent") or (arg == "--report=silent"):   # (unadvertised)
+			reportAs = "silent"
 		elif (arg in ["--noendmark]","--noeof","--nomark"]):   # (unadvertised)
 			requireEof = False
 		elif (arg.startswith("--seed=")):
@@ -194,7 +196,7 @@ def main():
 		else:
 			usage("unrecognized option: %s" % arg)
 
-	if (reportAs == "matrix"):
+	if (reportAs in ["matrix","silent"]):
 		discardWhich = "none"
 
 	if (testMethod == "chi-squared"):
@@ -304,7 +306,7 @@ def main():
 	#     example (if we're testing by error counts), a perfect alignment
 	#     currently gets discarded because it can't be tested
 
-	if (reportAs == "matrix"):
+	if (reportAs in ["matrix","silent"]):
 		outcomeMapping = {True:"not_rejected", False:"rejected", None:"untested"}
 	else: # if (reportAs == "ncrf"):
 		if (testWhich == "matches-insertions"):
@@ -333,6 +335,8 @@ def main():
 			testOutcome = accepted[alignmentNum]
 			vec = [a.lineNumber,outcomeMapping[testOutcome]] + mxMatrix[alignmentNum]
 			print "\t".join(map(str,vec))
+	elif (reportAs == "silent"):
+		pass
 	else: # if (reportAs == "ncrf"):
 		numKept = 0
 		isFirst = True
