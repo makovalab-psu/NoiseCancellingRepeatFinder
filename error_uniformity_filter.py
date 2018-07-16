@@ -11,7 +11,7 @@ import subprocess
 from sys        import argv,stdin,stdout,stderr,exit
 from os         import path as os_path
 from random     import seed as random_seed,sample as random_sample,randint
-from ncrf_parse import alignments,parse_probability,int_with_unit
+from ncrf_parse import alignments,parse_probability,int_with_unit,commatize
 
 defaultPrngSeed = "NCRF.error_uniformity_filter"
 
@@ -26,7 +26,18 @@ defaultPrngSeed = "NCRF.error_uniformity_filter"
 #     contribute to the test. Subtracting insertion counts from match counts
 #     gives insertions the same effect as deletions.
 #
-# [2] Here we describe the format of the file produced by the unadvertised
+# [2] The min-max method introduced some non-determinism. It is expected that
+#     this will only affect alignments near the pass/fail boundary. Whether
+#     an alignment is passed or failed depends to some extent on the state of
+#     the PRNG. This state is affected by the initial seed (which will be the
+#     same for all runs unless the user sets it) and how many times the PRNG
+#     has been called in processing previous alignments. Thus, even without
+#     changing the seeding, an alignment processed in different runs with
+#     different parameters (or appearing at a different relative position in
+#     the input) is processed with a different PRNG state. It is likely that
+#     alignment not close to the pass/fail boundary would not be affected.
+#
+# [3] Here we describe the format of the file produced by the unadvertised
 #     option --report:matrix. The reason this option isn't advertised is that
 #     is should only be useful to developers testing implementation details of
 #     the underlying chi-squared test.
@@ -38,17 +49,6 @@ defaultPrngSeed = "NCRF.error_uniformity_filter"
 #     columns M+3 thru 2M+2 are the positional error counts. We assume all rows
 #     have the same number of columns, i.e. that the same motif length is
 #     represented in all rows.
-#
-# [3] The min-max method introduced some non-determinism. It is expected that
-#     this will only affect alignments near the pass/fail boundary. Whether
-#     an alignment is passed or failed depends to some extent on the state of
-#     the PRNG. This state is affected by the initial seed (which will be the
-#     same for all runs unless the user sets it) and how many times the PRNG
-#     has been called in processing previous alignments. Thus, even without
-#     changing the seeding, an alignment processed in different runs with
-#     different parameters (or appearing at a different relative position in
-#     the input) is processed with a different PRNG state. It is likely that
-#     alignment not close to the pass/fail boundary would not be affected.
 
 def usage(s=None):
 	message = """
@@ -79,6 +79,7 @@ usage: cat <output_from_NCRF> | error_uniformity_filter [options]
                         default seed) and "none" (don't seed the random number
                         generator)
   --head=<number>       limit the number of input alignments
+  --progress=<number>   periodically report how many alignments we've tested
   --batch=<number>      number of input alignments processed by each call to R;
                         our ability to call R fails if the command line we pass
                         it is too long
@@ -109,7 +110,7 @@ performed, usually because one of the positional match counts is too small."""
 
 
 def main():
-	global batchSize
+	global reportProgress,batchSize
 	global debug
 
 	# parse the command line
@@ -122,10 +123,11 @@ def main():
 	testWhich      = "matches"
 	warnOnUntested = False
 	headLimit      = None
-	batchSize      = 30
+	batchSize      = None  # (will be replace by method-specific result)
 	reportAs       = "ncrf"
 	requireEof     = True
 	prngSeed       = defaultPrngSeed
+	reportProgress = None
 	debug          = []
 
 	for arg in argv[1:]:
@@ -141,7 +143,7 @@ def main():
 		elif (arg.startswith("--power=")):
 			power = parse_probability(argVal)
 		elif (arg.startswith("--trials=")):
-			numTrials = int(argVal)
+			numTrials = int_with_unit(argVal)
 		elif (arg in ["--discard:bad","--discard=bad"]):
 			discardWhich = "bad"
 		elif (arg in ["--discard:good","--discard=good"]):
@@ -159,6 +161,8 @@ def main():
 			warnOnUntested = True
 		elif (arg.startswith("--head=")):
 			headLimit = int_with_unit(argVal)
+		elif (arg.startswith("--progress=")):
+			reportProgress = int_with_unit(argVal)
 		elif (arg.startswith("--batch=")):
 			batchSize = int(argVal)
 		elif (arg == "--report:matrix") or (arg == "--report=matrix"):   # (unadvertised)
@@ -195,8 +199,10 @@ def main():
 
 	if (testMethod == "chi-squared"):
 		testDescription = "positional chi-squared"
+		if (batchSize == None): batchSize = 30
 	elif (testMethod == "min-max"):
 		testDescription = "positional min-max"
+		if (batchSize == None): batchSize = 1
 	else:
 		exit("%s: internal error: unrecognized test method: \"%s\""
 		   % (os_path.basename(argv[0]),testMethod))
@@ -229,14 +235,30 @@ def main():
 	                       headLimit=headLimit,requireEof=requireEof)
 
 	numAlignments = len(alignmentList)
-
-	if (testMethod == "min-max"):
-		batchSize = numAlignments
+	if (reportProgress != None):
+		print >>stderr, "progress: read %s alignments" \
+		              % (commatize(numAlignments))
 
 	# assess the alignments, batch-by-batch
 
+	if (reportProgress != None):
+		progressReported = -1
+
 	accepted = []
+	outcomeCount = {True:0, False:0, None:0}
 	for batchStartIx in xrange(0,numAlignments,batchSize):
+		alignmentsTested = batchStartIx
+		if (reportProgress != None):
+			rBlock = (progressReported+1)/reportProgress
+			aBlock = (alignmentsTested+1)/reportProgress
+			if (alignmentsTested == 0) or (aBlock != rBlock):
+				print >>stderr, "progress: testing alignment %s (%d uniform, %d non-uniform, %d untested)" \
+				              % (commatize(1+alignmentsTested),
+				                 outcomeCount[True],
+				                 outcomeCount[False],
+				                 outcomeCount[None])
+				progressReported = alignmentsTested
+
 		batchEndIx = min(batchStartIx+batchSize,numAlignments)
 		if ("batch" in debug):
 			print >>stderr, "using R for alignments %d thru %d" \
@@ -246,25 +268,25 @@ def main():
 		aBatch  = alignmentList[batchStartIx:batchEndIx]
 
 		if (testMethod == "chi-squared"):
-			resultBatch = mx_significance_tests(mxBatch,testWhich,effectSize,power)
-			if (type(resultBatch) == str):
+			batchResult = mx_significance_tests(mxBatch,testWhich,effectSize,power)
+			if (type(batchResult) == str):
 				exit(("%s: internal error: having trouble with R"
 				        + " (with alignment batch %d..%d)"
 				        + "\nHere's what R reported:\n%s")
-				   % (os_path.basename(argv[0]),batchStartIx,batchEndIx,resultBatch))
+				   % (os_path.basename(argv[0]),batchStartIx,batchEndIx,batchResult))
 		else:  # if (testMethod == "min-max"):
-			resultBatch = min_max_tests(aBatch,mxBatch,testWhich,numTrials)
-			if (type(resultBatch) == str):
+			batchResult = min_max_tests(aBatch,mxBatch,batchStartIx,testWhich,numTrials)
+			if (type(batchResult) == str):
 				exit(("%s: internal error: having trouble with min-max test"
 				        + " (with alignment batch %d..%d)"
 				        + "\nHere's what was reported:\n%s")
-				   % (os_path.basename(argv[0]),batchStartIx,batchEndIx,resultBatch))
+				   % (os_path.basename(argv[0]),batchStartIx,batchEndIx,batchResult))
 
-		if (len(resultBatch) != batchEndIx-batchStartIx):
+		if (len(batchResult) != batchEndIx-batchStartIx):
 			exit(("%s: internal error: number of test outcomes reported by R (%d)"
 			       + "\n  .. doesn't match the number of tests given to R (%d)")
-			   % (os_path.basename(argv[0]),len(resultBatch),batchEndIx-batchStartIx))
-		accepted += resultBatch
+			   % (os_path.basename(argv[0]),len(batchResult),batchEndIx-batchStartIx))
+		accepted += batchResult
 
 		if (warnOnUntested):
 			for alignmentNum in xrange(batchStartIx,batchEndIx):
@@ -273,10 +295,9 @@ def main():
 					print >>stderr, "WARNING: alignment number %d (at line %d) could not be tested" \
 					              % (alignmentNum,1+alignmentList[alignmentNum].lineNumber)
 
-	outcomeCount = {True:0, False:0, None:0}
-	for (alignmentNum,a) in enumerate(alignmentList):
-		testOutcome = accepted[alignmentNum]
-		outcomeCount[testOutcome] += 1
+		for alignmentNum in xrange(batchStartIx,batchEndIx):
+			testOutcome = accepted[alignmentNum]
+			outcomeCount[testOutcome] += 1
 
 	# process the alignments and their assessments
 	# $$$ untested alignments should be processed by some other test -- for
@@ -307,7 +328,7 @@ def main():
 					  % (outcomeNameW+1,"%s:" % outcomeName,count,100.0*count/numAlignments)
 
 	if (reportAs == "matrix"):
-		# see note [2] above for the format of the matrix file
+		# see note [3] above for the format of the matrix file
 		for (alignmentNum,a) in enumerate(alignmentList):
 			testOutcome = accepted[alignmentNum]
 			vec = [a.lineNumber,outcomeMapping[testOutcome]] + mxMatrix[alignmentNum]
@@ -348,7 +369,11 @@ def collect_alignments(f,testWhich,headLimit=None,requireEof=True):
 
 	alignmentNum = 0
 	for a in alignments(f,requireEof):
-		alignmentNum +=1 
+		alignmentNum += 1 
+		if    (reportProgress != None) \
+		  and (alignmentNum ==1 ) or (alignmentNum % reportProgress == 0):
+			print >>stderr, "progress: reading alignment %s" \
+			              % (commatize(alignmentNum))
 
 		if (headLimit != None) and (alignmentNum > headLimit):
 			print >>stderr, "limit of %d alignments reached" % headLimit
@@ -512,7 +537,8 @@ def shell_command_exists(commandName):
 
 
 # min_max_tests--
-#	"Judge" whether alignments in a batch are uniform or not.
+#	"Judge" whether alignments in a batch are uniform or not. This test is
+#	non-deterministic (see note [2]).
 #
 # Input is an Nx2M matrix, where N is the number of alignments and M is the
 # length of the aligned motif unit. The first M columns are the positional
@@ -531,7 +557,7 @@ def shell_command_exists(commandName):
 #   False ==> reject null hypothesis;       the counts are biased
 #   None  ==> unable to run the test
 
-def min_max_tests(aBatch,mxBatch,testWhich,numTrials):
+def min_max_tests(aBatch,mxBatch,batchStartIx,testWhich,numTrials):
 	motifLen = len(mxBatch[0]) / 2
 
 	results = [None] * len(mxBatch)
@@ -560,7 +586,7 @@ def min_max_tests(aBatch,mxBatch,testWhich,numTrials):
 
 			if (minTrialCount == None) or (trialMin < minTrialCount):
 				minTrialCount = trialMin
-			if (maxTrialCount == None) or (trialMax < maxTrialCount):
+			if (maxTrialCount == None) or (trialMax > maxTrialCount):
 				maxTrialCount = trialMax
 
 		if (minCount >= minTrialCount) and (maxCount <= maxTrialCount):
@@ -568,9 +594,10 @@ def min_max_tests(aBatch,mxBatch,testWhich,numTrials):
 		else:
 			results[rowIx] = False
 
-		if ("min-max" in debug):
+		if   ("min-max" in debug) \
+		  or (("min-max:fail" in debug) and (not results[rowIx])):
 			print >>stderr, "[%d] %d/%d <%s> real:%d..%d random:%d..%d %s" \
-			              % (rowIx,numEvents,alignmentLen,
+			              % (1+batchStartIx+rowIx,numEvents,alignmentLen,
 			                 " ".join(map(str,testCounts)),
 			                 minCount,maxCount,minTrialCount,maxTrialCount,
 			                 "pass" if (results[rowIx]) else "fail")
