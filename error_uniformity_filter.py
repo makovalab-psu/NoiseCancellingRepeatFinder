@@ -222,6 +222,9 @@ def main():
 
 	numAlignments = len(alignmentList)
 
+	if (testMethod == "min-max"):
+		batchSize = numAlignments
+
 	# assess the alignments, batch-by-batch
 
 	accepted = []
