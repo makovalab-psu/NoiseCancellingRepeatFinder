@@ -26,7 +26,7 @@ defaultPrngSeed = "NCRF.error_uniformity_filter"
 #     contribute to the test. Subtracting insertion counts from match counts
 #     gives insertions the same effect as deletions.
 #
-# [2] The min-max method introduced some non-determinism. It is expected that
+# [2] The min-max method introduces some non-determinism. It is expected that
 #     this will only affect alignments near the pass/fail boundary. Whether
 #     an alignment is passed or failed depends to some extent on the state of
 #     the PRNG. This state is affected by the initial seed (which will be the
@@ -35,7 +35,7 @@ defaultPrngSeed = "NCRF.error_uniformity_filter"
 #     changing the seeding, an alignment processed in different runs with
 #     different parameters (or appearing at a different relative position in
 #     the input) is processed with a different PRNG state. It is likely that
-#     alignment not close to the pass/fail boundary would not be affected.
+#     alignments not close to the pass/fail boundary would not be affected.
 #
 # [3] Here we describe the format of the file produced by the unadvertised
 #     option --report:matrix. The reason this option isn't advertised is that
@@ -62,7 +62,7 @@ usage: cat <output_from_NCRF> | error_uniformity_filter [options]
                         error probability
                         (default is 0.8)
   --trials=<number>     number of trials for min-max-test
-                        (default is 100)
+                        (default is 1000)
   --discard:good        discard the "good" alignments instead of the "bad" ones
                         (by default we discard the "bad" alignments) 
   --discard:none        don't discard any alignments, just report the test
@@ -118,7 +118,7 @@ def main():
 	testMethod     = "chi-squared"
 	effectSize     = 0.3
 	power          = 0.8
-	numTrials      = 100
+	numTrials      = 1000
 	discardWhich   = "bad"
 	testWhich      = "matches"
 	warnOnUntested = False
@@ -575,7 +575,8 @@ def min_max_tests(aBatch,mxBatch,batchStartIx,testWhich,numTrials):
 
 		minTrialCount = maxTrialCount = None
 		for trialNum in xrange(numTrials):
-			positionToCount = {pos:0 for pos in xrange(motifLen)}
+			positionToCount = [0] * motifLen  # (list performed faster than dict)
+
 			motifOffset = randint(0,motifLen-1)
 			for aPos in random_sample(xrange(alignmentLen),numEvents):
 				mPos = (aPos + motifOffset) % motifLen
