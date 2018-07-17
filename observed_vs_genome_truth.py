@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Compare observed events from alignments to known truth.
+Compare observed events from alignments to known truth in a genome.
 
 References:
   [1] https://en.wikipedia.org/wiki/Sensitivity_and_specificity
@@ -13,7 +13,7 @@ from ncrf_parse import parse_noise_rate
 
 def usage(s=None):
 	message = """
-usage: cat <alignment_summary> | observed_vs_truth <truth_catalog> [options]
+usage: cat <alignment_summary> | observed_vs_genome_truth <truth_catalog> [options]
   <truth_catalog>        File containing aligment "truth" (see below)
   --motif=<motif>        (cumulative) Motifs represented in the summary. Truth
                          intervals for other motifs are discarded. If this is
