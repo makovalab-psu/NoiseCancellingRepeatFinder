@@ -375,7 +375,7 @@ def collect_alignments(f,testWhich,headLimit=None,requireEof=True):
 	for a in alignments(f,requireEof):
 		alignmentNum += 1 
 		if    (reportProgress != None) \
-		  and (alignmentNum ==1 ) or (alignmentNum % reportProgress == 0):
+		  and ((alignmentNum == 1) or (alignmentNum % reportProgress == 0)):
 			print >>stderr, "progress: reading alignment %s" \
 			              % (commatize(alignmentNum))
 
