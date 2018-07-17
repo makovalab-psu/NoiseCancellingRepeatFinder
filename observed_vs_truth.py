@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Compare observed events from alignments to known truth in a genome.
+Compare observed events from alignments to known truth in a genome or reads.
 
 References:
   [1] https://en.wikipedia.org/wiki/Sensitivity_and_specificity
@@ -13,8 +13,13 @@ from ncrf_parse import parse_noise_rate
 
 def usage(s=None):
 	message = """
-usage: cat <alignment_summary> | observed_vs_genome_truth <truth_catalog> [options]
-  <truth_catalog>        File containing aligment "truth" (see below)
+usage: cat <alignment_summary> | observed_vs_truth <truth_catalog> [options]
+  <truth_catalog>        File containing aligment "truth"; the format of this
+                         file depends on whether we have alignments to a genome
+                         or alignments to reads (see below)
+  --genome               alignments are to a genome
+                         (this is the default)
+  --reads                alignments are to reads
   --motif=<motif>        (cumulative) Motifs represented in the summary. Truth
                          intervals for other motifs are discarded. If this is
                          not provided, we use all truth intervals.
@@ -53,10 +58,18 @@ The alignment summary is usually the output from ncrf_summary. It has 13
 columns but only the aligned intervals and motif are used here ("seq", "start",
 "end", and "motif", columns 3, 4, 5, and 2).
 
-The truth catalog is usually the output from the --catalog option of
-mock_motif_read. It has 12 columns but only the intervals and motif are used
-here ("chrom", "start", "end", and "motif", columns 1, 2, 3, and 4). Intervals
-must be distinct; overlaps are not allowed."""
+The format of the truth catalog depends on whether we have alignments to a
+genome or alignments to reads.
+
+For alignments to a genome, the truth catalog is usually the output from the
+--catalog option of mock_motif_genome. It has 12 columns but only the intervals
+and motif are used here ("chrom", "start", "end", and "motif", columns 1, 2, 3,
+and 4). Intervals must be distinct; overlaps are not allowed.
+
+For alignments to reads, the truth catalog is usually the output from
+map_onto_simulated_reads. It has 7 unlabled columns but only the intervals and
+motif are used here ("readName", "start", "end", and "motif", columns 4, 5, 6,
+and 7). Intervals must be distinct; overlaps are not allowed."""
 
 	if (s == None): exit (message)
 	else:           exit ("%s\n%s" % (s,message))
@@ -67,6 +80,7 @@ def main():
 	# parse the command line
 
 	truthFilename   = None
+	alignmentTarget = "genome"
 	detectionThresh = 0.95
 	detailFilename  = None
 	motifs          = None
@@ -79,6 +93,10 @@ def main():
 			if (truthFilename != None):
 				usage("unrecognized option: %s" % arg)
 			truthFilename = argVal
+		elif (arg == "--genome="):
+			alignmentTarget = "genome"
+		elif (arg == "--reads="):
+			alignmentTarget = "reads"
 		elif (arg.startswith("--motif=")):
 			if (motifs == None): motifs = Set()
 			motifs.add(argVal)
@@ -102,13 +120,18 @@ def main():
 
 	# collect the truth
 
+	if (alignmentTarget == "genome"):
+		intervalColumns = (0,1,2,3)
+	else:  # if (alignmentTarget == "reads"):
+		intervalColumns = (4,5,6,7)
+
 	chromOrder = []
 	chromSeen  = Set()
 
 	truth = {}
 
 	f = file(truthFilename,"rt")
-	for (chrom,start,end,motif) in read_intervals(f,(0,1,2,3),truthFilename):
+	for (chrom,start,end,motif) in read_intervals(f,intervalColumns,truthFilename):
 		if (motifs != None):
 			motif = motif.split(".")[0]
 			if (motif not in motifs): continue
@@ -149,6 +172,7 @@ def main():
 	# compute true positives and false positives for each observed interval
 	#
 	# See reference [1].
+	# $$$ need to compute over-covered intervals also
 
 	pTotal = tpTotal = fpTotal = 0
 	for chrom in chromOrder:
@@ -242,10 +266,10 @@ def read_intervals(f,columns,filename=None):
 	if (filename == None): filename = "input"
 
 	if (len(columns) == 3):
-		(chromCol,startCol,endCol) = columns
-		motifCol = None
+		(nameCol,startCol,endCol) = columns
+		tagCol = None
 	else:
-		(chromCol,startCol,endCol,motifCol) = columns
+		(nameCol,startCol,endCol,tagCol) = columns
 
 	minColumns = 1+max(columns)
 	numColumns = None
@@ -269,18 +293,18 @@ def read_intervals(f,columns,filename=None):
 			     % (lineNumber,filename,len(fields),numColumns)
 
 		try:
-			chrom = fields[chromCol]
+			name  = fields[nameCol]
 			start = int(fields[startCol])
 			end   = int(fields[endCol])
 			if (end < start): raise ValueError
-			if (motifCol != None): motif = fields[motifCol]
+			if (tagCol != None): tag = fields[tagCol]
 		except ValueError:
 			assert (False), "bad line (%d in %s): %s" % (lineNumber,filename,line)
 
-		if (motifCol == None):
-			yield (chrom,start,end)
+		if (tagCol == None):
+			yield (name,start,end)
 		else:
-			yield (chrom,start,end,motif)
+			yield (name,start,end,tag)
 
 
 # merge_intervals--

@@ -15,7 +15,7 @@ usage: cat <truth_catalog> | truth_to_rates [options]
   (currently, there are no options)
 
 The truth catalog is usually the output from the --catalog option of
-mock_motif_read. It has 12 columns but only the events are used here ("m",
+mock_motif_genome. It has 12 columns but only the events are used here ("m",
 "mm", "i", and "d", columns 9, 10, 11, and 12)."""
 
 	if (s == None): exit (message)
