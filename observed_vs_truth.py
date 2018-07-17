@@ -76,6 +76,7 @@ and 7). Intervals must be distinct; overlaps are not allowed."""
 
 
 def main():
+	global debug
 
 	# parse the command line
 
@@ -84,6 +85,7 @@ def main():
 	detectionThresh = 0.95
 	detailFilename  = None
 	motifs          = None
+	debug           = []
 
 	for arg in argv[1:]:
 		if ("=" in arg):
@@ -93,9 +95,9 @@ def main():
 			if (truthFilename != None):
 				usage("unrecognized option: %s" % arg)
 			truthFilename = argVal
-		elif (arg == "--genome="):
+		elif (arg == "--genome"):
 			alignmentTarget = "genome"
-		elif (arg == "--reads="):
+		elif (arg == "--reads"):
 			alignmentTarget = "reads"
 		elif (arg.startswith("--motif=")):
 			if (motifs == None): motifs = Set()
@@ -108,6 +110,10 @@ def main():
 				usage("detection threshold cannot be more than 100% (%s)" % arg)
 		elif (arg.startswith("--detail=")):
 			detailFilename = argVal
+		elif (arg == "--debug"):
+			debug += ["debug"]
+		elif (arg.startswith("--debug=")):
+			debug += argVal.split(",")
 		elif (arg.startswith("--")):
 			usage("unrecognized option: %s" % arg)
 		elif (truthFilename == None):
@@ -123,7 +129,7 @@ def main():
 	if (alignmentTarget == "genome"):
 		intervalColumns = (0,1,2,3)
 	else:  # if (alignmentTarget == "reads"):
-		intervalColumns = (4,5,6,7)
+		intervalColumns = (3,4,5,6)
 
 	chromOrder = []
 	chromSeen  = Set()
@@ -133,8 +139,13 @@ def main():
 	f = file(truthFilename,"rt")
 	for (chrom,start,end,motif) in read_intervals(f,intervalColumns,truthFilename):
 		if (motifs != None):
-			motif = motif.split(".")[0]
+			if (alignmentTarget == "genome"):
+				motif = motif.split(".")[0]
+			else:  # if (alignmentTarget == "reads"):
+				if (motif[-1] in ["+","-"]): motif = motif[:-1]
 			if (motif not in motifs): continue
+		if ("truth" in debug):
+			print >>stderr, "truth: %s %d %d %s" % (chrom,start,end,motif)
 		if (chrom not in chromSeen):
 			chromOrder += [chrom]
 			chromSeen.add(chrom)
@@ -146,11 +157,16 @@ def main():
 		truth[chrom].sort()
 
 	for chrom in truth:
+		if ("overlap" in debug):
+			print >>stderr, "on %s:" % chrom
+			for (s,e) in truth[chrom]:
+				print >>stderr, "  %d..%d" % (s,e)
+
 		(prevStart,prevEnd) = truth[chrom][0]
 		for (s,e) in truth[chrom][1:]:
-			assert (start >= prevEnd), \
-			       "truth interval %d..%d overlaps %d..%d" \
-			     % (prevStart,prevEnd,s,e)
+			assert (s >= prevEnd), \
+			       "on %s, truth interval %d..%d overlaps %d..%d" \
+			     % (chrom,prevStart,prevEnd,s,e)
 			(prevStart,prevEnd) = (s,e)
 
 	# collect the observations
@@ -160,6 +176,8 @@ def main():
 	for (chrom,start,end,motif) in read_intervals(stdin,(2,3,4,1)):
 		if (motifs != None):
 			if (motif not in motifs): continue
+		if ("observations" in debug):
+			print >>stderr, "observation: %s %d %d %s" % (chrom,start,end,motif)
 		if (chrom not in chromSeen):
 			chromOrder += [chrom]
 			chromSeen.add(chrom)
@@ -249,9 +267,12 @@ def main():
 		    % ("DETECTED",detected,len(perInterval),100.0*detected/len(perInterval))
 
 	if (detailFilename != None):
+		if (alignmentTarget == "genome"): chromName = "chrom"
+		else:                             chromName = "read"
+
 		f = file(detailFilename,"wt")
 		print >>f, "#%s\t%s\t%s\t%s/%s\t%s" \
-			     % ("chrom","start","end","TP","TP+FN","TPR")
+			     % (chromName,"start","end","TP","TP+FN","TPR")
 		for (chrom,start,end,tp) in perInterval:
 			length = end-start
 			print >>f, "%s\t%s\t%s\t%s/%s\t%5.1f%%" \
