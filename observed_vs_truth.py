@@ -170,6 +170,7 @@ def main():
 			(prevStart,prevEnd) = (s,e)
 
 	# collect the observations
+	# $$$ will need to allow overlaps in this, so we can check for over-covered intervals
 
 	observed = {}
 
