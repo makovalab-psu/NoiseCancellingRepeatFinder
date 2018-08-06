@@ -23,7 +23,7 @@ usage: cat <alignment_summary> | observed_vs_truth <truth_catalog> [options]
   --motif=<motif>        (cumulative) Motifs represented in the summary. Truth
                          intervals for other motifs are discarded. If this is
                          not provided, we use all truth intervals.
-  --detection=<portion>  threshold for a truth intervals to be considered as
+  --detection=<portion>  threshold for a truth interval to be considered as
                          "suffiently" covered; 0<portion<=1, but can be
                          expressed with a % sign
                          (default is 95%)
