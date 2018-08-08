@@ -58,7 +58,7 @@ def usage(s=None):
 usage: cat <output_from_NCRF> | error_uniformity_filter [options]
   --method=min-max      judge alignments by a "min-max" test  
                         (this is the default)
-  --trials=<number>     number of trials for min-max-test
+  --trials=<number>     number of trials for the min-max test
                         (default is 1000)
   --discard:good        discard the "good" alignments instead of the "bad" ones
                         (by default we discard the "bad" alignments) 
