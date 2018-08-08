@@ -49,30 +49,27 @@ defaultPrngSeed = "NCRF.error_uniformity_filter"
 #     columns M+3 thru 2M+2 are the positional error counts. We assume all rows
 #     have the same number of columns, i.e. that the same motif length is
 #     represented in all rows.
+#
+# [4] The chi-squared test is no longer advertised, because it was found to be
+#     flawed.
 
 def usage(s=None):
 	message = """
 usage: cat <output_from_NCRF> | error_uniformity_filter [options]
-  --method=chi-squared  judge alignments by a chi-squared test
-                        (this is the default)
   --method=min-max      judge alignments by a "min-max" test  
-  --effectsize=<value>  effect size for chi-squared test
-                        (default is 0.3)
-  --power=<probability> "power of test" for chi-squared test, 1 minus Type II
-                        error probability
-                        (default is 0.8)
+                        (this is the default)
   --trials=<number>     number of trials for min-max-test
                         (default is 1000)
   --discard:good        discard the "good" alignments instead of the "bad" ones
                         (by default we discard the "bad" alignments) 
   --discard:none        don't discard any alignments, just report the test
                         outcomes (see below for how they are reported) 
-  --test:matches        perform the test using match counts
+  --test:matches-insertions perform the test using match counts less insertions
                         (this is the default)
+  --test:matches        perform the test using match counts
   --test:errors         perform the test using error counts; this may increase
                         the likelihood that the test cannot be performed for
-                        some alignments
-  --test:matches-insertions perform the test using match counts less insertions
+                        some alignments, since the counts may be too low
   --warn:untested       report each untestable alignment as a warning
   --seed=<string>       set random seed; this is only applicable to the min-max
                         test; two special cases are "default" (use the built-in
@@ -87,23 +84,33 @@ usage: cat <output_from_NCRF> | error_uniformity_filter [options]
 
 In a "true" alignment to a given motif unit, we expect the errors to be
 distributed randomly and uniformly among the positions in the unit. (That is
-an underlying assumption, but might not be true.)  This program discards
-alignments that fail a statistical test based on that assumption.
+an underlying assumption, possibly not true.)  This program discards alignments
+that fail a test based on that assumption.
 
-Since error counts may be too small for the statistical test, we use match
-counts instead.
+Error counts are often too small for the statistical test, so a test based on
+match counts is used instead. However, an insertion error does not reduce the
+match count at any position, so by default we decreses matches by the number of
+insertions at that position.
 
 The input alignments must include position event information. This can be
 accomplished by using the --positionalevents option of Noise Cancelling Repeat
 Finder.
 
 When test outcomes are reported for --discard:none, one of the following lines
-is added to each alignment ("chi-squared" may be replaced by "min-max"):
-# positional chi-squared: match uniformity rejected
-# positional chi-squared: match uniformity not rejected
-# positional chi-squared: untested
-The "untested" case indicates that the chi-squared test could not be
-performed, usually because one of the positional match counts is too small."""
+is added to each alignment
+# positional min-max: match-insert uniformity rejected
+# positional min-max: match-insert uniformity not rejected
+# positional min-max: untested
+The "untested" case indicates that the min-max test could not be performed,
+usually because one of the positional match counts is too small."""
+
+# options no longer advertised:
+#  --method=chi-squared  judge alignments by a chi-squared test
+#  --effectsize=<value>  effect size for chi-squared test
+#                        (default is 0.3)
+#  --power=<probability> "power of test" for chi-squared test, 1 minus Type II
+#                        error probability
+#                        (default is 0.8)
 
 	if (s == None): exit (message)
 	else:           exit ("%s\n%s" % (s,message))
@@ -115,12 +122,12 @@ def main():
 
 	# parse the command line
 
-	testMethod     = "chi-squared"
-	effectSize     = 0.3
-	power          = 0.8
-	numTrials      = 1000
+	testMethod     = "min-max"
+	numTrials      = 1000          # (only used for testMethod == "min-max")
+	effectSize     = 0.3           # (only used for testMethod == "chi-square")
+	power          = 0.8           # (only used for testMethod == "chi-square")
 	discardWhich   = "bad"
-	testWhich      = "matches"
+	testWhich      = "matches-insertions"
 	warnOnUntested = False
 	headLimit      = None
 	batchSize      = None  # (will be replace by method-specific result)
@@ -134,29 +141,29 @@ def main():
 		if ("=" in arg):
 			argVal = arg.split("=",1)[1]
 
-		if (arg in ["--method=chi-squared","--method=chi-square"]):
-			testMethod = "chi-squared"
-		elif (arg == "--method=min-max"):
+		if (arg == "--method=min-max"):
 			testMethod = "min-max"
-		elif (arg.startswith("--effectsize=")):
-			effectSize = parse_probability(argVal)
-		elif (arg.startswith("--power=")):
-			power = parse_probability(argVal)
 		elif (arg.startswith("--trials=")):
 			numTrials = int_with_unit(argVal)
+		elif (arg in ["--method=chi-squared","--method=chi-square"]):    # (unadvertised, see [4])
+			testMethod = "chi-squared"
+		elif (arg.startswith("--effectsize=")):                          # (unadvertised, see [4])
+			effectSize = parse_probability(argVal)
+		elif (arg.startswith("--power=")):                               # (unadvertised, see [4])
+			power = parse_probability(argVal)
 		elif (arg in ["--discard:bad","--discard=bad"]):
 			discardWhich = "bad"
 		elif (arg in ["--discard:good","--discard=good"]):
 			discardWhich = "good"
 		elif (arg in ["--discard:none","--discard=none"]):
 			discardWhich = "none"
+		elif (arg in ["--test:matches-insertions","--test=matches-insertions",
+		              "--test:m-i","--test=m-i"]):
+			testWhich = "matches-insertions"
 		elif (arg in ["--test:matches","--test=matches"]):
 			testWhich = "matches"
 		elif (arg in ["--test:errors","--test=errors"]):
 			testWhich = "errors"
-		elif (arg in ["--test:matches-insertions","--test=matches-insertions",
-		              "--test:m-i","--test=m-i"]):
-			testWhich = "matches-insertions"
 		elif (arg == "--warn:untested") or (arg == "--warn=matrix"):
 			warnOnUntested = True
 		elif (arg.startswith("--head=")):

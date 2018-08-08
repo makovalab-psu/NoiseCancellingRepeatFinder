@@ -27,15 +27,9 @@ To install Noise Cancelling Repeat Finder using the source:
 
 * gcc or similar C compiler and linker
 * python (tested with version 2.7, not likely to work with python 3)
-* R statistical programming language
-* The R package pwr
 
 Python is not used by the core program, but is needed for a post-processing
 helper programs included in the package.
-
-R, specifically the command line version Rscript, is used by the python
-post-processing script that performs positional-filtering,
-ncrf_positional_filter.py.
 
 ### Usage Overview
 

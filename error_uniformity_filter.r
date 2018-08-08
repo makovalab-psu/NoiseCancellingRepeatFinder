@@ -1,5 +1,9 @@
 #===
 # see error_uniformity_filter.py to see how this is used
+#
+# Note that this is only used ito support the error_uniformity_filter.py option
+# --method=chi-squared. This method has been found to be flawed, and is not
+# recommended.
 #===
 
 require(pwr)
