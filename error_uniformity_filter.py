@@ -333,8 +333,10 @@ def main():
 	for testOutcome in [True,False,None]:
 		outcomeName = outcomeMapping[testOutcome]
 		count       = outcomeCount[testOutcome]
-		print >>stderr, "%-*s %d (%.2f%%)" \
-					  % (outcomeNameW+1,"%s:" % outcomeName,count,100.0*count/numAlignments)
+		reportStr = "%-*s %d" % (outcomeNameW+1,"%s:" % outcomeName,count)
+		if (numAlignments > 0):
+			reportStr += " (%.2f%%)" % (100.0*count/numAlignments)
+		print >>stderr, reportStr
 
 	if (reportAs == "matrix"):
 		# see note [3] above for the format of the matrix file
@@ -364,8 +366,10 @@ def main():
 			print a
 			numKept += 1
 
-		print >>stderr, "kept %d of %d alignments, %.2f%%" \
-					  % (numKept,numAlignments,100.0*numKept/numAlignments)
+		reportStr = "kept %d of %d alignments" % (numKept,numAlignments)
+		if (numAlignments > 0):
+			reportStr += ", %.2f%%" % (100.0*numKept/numAlignments)
+		print >>stderr, reportStr
 
 		if (requireEof):
 			print "# ncrf end-of-file"
