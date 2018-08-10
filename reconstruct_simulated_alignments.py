@@ -168,7 +168,10 @@ def main():
 	if (intervalsFilename != None):
 		chromToIntervals = {}
 
-		intervalsF = file(intervalsFilename,"rt")
+		if (intervalsFilename.endswith(".gz")) or (intervalsFilename.endswith(".gzip")):
+			intervalsF = gzip_open(intervalsFilename,"rt")
+		else:
+			intervalsF = file(intervalsFilename,"rt")
 
 		for (lineNumber,chrom,gStart,gEnd,tags) in read_intervals(intervalsF):
 			if (chromsOfInterest != None) and (chrom not in chromsOfInterest): continue
@@ -235,7 +238,10 @@ def main():
 
 	# read the cigar strings
 
-	cigarF = file(cigarFilename,"rt")
+	if (cigarFilename.endswith(".gz")) or (cigarFilename.endswith(".gzip")):
+		cigarF = gzip_open(cigarFilename,"rt")
+	else:
+		cigarF = file(cigarFilename,"rt")
 
 	readNameToCigar = {}
 
