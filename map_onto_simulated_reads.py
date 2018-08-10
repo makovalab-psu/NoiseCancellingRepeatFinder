@@ -4,6 +4,7 @@ Map intervals from a "genome" to positions on simulated reads.
 """
 
 from sys  import argv,stdin,stdout,stderr,exit
+from gzip import open as gzip_open
 
 
 def usage(s=None):
@@ -81,7 +82,10 @@ def main():
 
 	# read the cigar strings
 
-	cigarF = file(cigarFilename,"rt")
+	if (cigarFilename.endswith(".gz")) or (cigarFilename.endswith(".gzip")):
+		cigarF = gzip_open(cigarFilename,"rt")
+	else:
+		cigarF = file(cigarFilename,"rt")
 
 	chroms = []
 	chromToCigars = {}
