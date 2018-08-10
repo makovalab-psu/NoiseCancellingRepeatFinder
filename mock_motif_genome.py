@@ -59,7 +59,9 @@ usage: mock_motif_genome <motif> [options]
                            (default is 0)
   --lengths=<file>         file containing the repeat length distribution, one
                            length per line; if this is absent, we'll read the
-                           repeat length distribution from stdin
+                           repeat length distribution from stdin; if <file>
+                           contains "{motif}", we'll use a separate distribution
+                           for each motif
   --minfill=<bp>      (F=) minimum fill (random sequence) between repeats
   --errors=pacbio          simulate pacbio error profile
                            (by default, errors are not simulated)
@@ -178,12 +180,25 @@ def main():
 
 	# read the lengths file
 
-	if (lengthsFilename != None):
+	repeatLengths = {}
+
+	if (lengthsFilename == None):
+		lengths = read_integers(stdin)
+		for motif in motifs:
+			repeatLengths[motif] = lengths
+	elif ("{motif}" not in lengthsFilename):
 		f = file(lengthsFilename,"rt")
-		repeatLengths = read_integers(f,lengthsFilename)
+		lengths = read_integers(f,lengthsFilename)
 		f.close()
+		for motif in motifs:
+			repeatLengths[motif] = lengths
 	else:
-		repeatLengths = read_integers(stdin)
+		for motif in motifs:
+			motifLengthsFilename = lengthsFilename.replace("{motif}",motif)
+			f = file(motifLengthsFilename,"rt")
+			lengths = read_integers(f,motifLengthsFilename)
+			f.close()
+			repeatLengths[motif] = lengths
 
 	# generate the number and type of motifs we'll embed
 	#
@@ -194,6 +209,7 @@ def main():
 	embeddings = []
 	for _ in xrange(numRepeats):
 		motif = choice(motifs)
+		length = choice(repeatLengths[motif])
 		u = unit_random()
 		if (genNeighbors > 0) and (u < genNeighbors):
 			motif = motif_neighbor(motif)
@@ -204,7 +220,6 @@ def main():
 			(mix,motif2) = (1.0,motif)
 		strand = choice(["+","-"])
 		offset = choice(xrange(len(motif)))
-		length = choice(repeatLengths)
 		embeddings += [(mix,motif,motif2,strand,offset,length)]
 
 	totalRepeatBp = sum([length for (_,_,_,_,_,length) in embeddings])
