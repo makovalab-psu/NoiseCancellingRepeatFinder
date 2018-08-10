@@ -27,7 +27,7 @@ usage: cat <intervals_file> | map_onto_simulated_reads [options]
 
 Given a genome from which simulated reads were sampled by simulate_reads_v4,
 and the corresponding cigars file, map intervals (or positions) from the genome
-to the corresponding positions on the simulated reads.
+to the corresponding positions on the simulated reads. 
 
 Intervals are one per line, <chrom> start> <end>, origin-zero half-open. Any
 additional columns are copied to the output."""
