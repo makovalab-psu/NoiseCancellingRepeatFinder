@@ -165,7 +165,8 @@ def sam_to_events(a):
 			elif (op == "M"):
 				cigarMatch += count
 	except ValueError:
-		warning = "problem with cigar string at line %d\n%s" % (a.lineNumber,a.cigar)
+		warning = "problem with cigar string at line %d" % a.lineNumber
+		warning += ("\n" + a.cigar) if (len(a.cigar) < 200) else ("\n(cigar too long -- %d)" % len(a.cigar))
 		if (warnOnError): return warning
 		raise ValueError, warning
 
@@ -186,7 +187,8 @@ def sam_to_events(a):
 				mdTagDelO += 1
 				mdTagDelX += len(op)-2
 	except ValueError:
-		warning = "problem with MD tag at line %d\n%s" % (a.lineNumber,a.mdTag)
+		warning = "problem with MD tag at line %d" % a.lineNumber
+		warning += ("\n" + a.mdTag) if (len(a.mdTag) < 200) else ("\n(mdTag too long -- %d)" % len(a.mdTag))
 		if (warnOnError): return warning
 		raise ValueError, warning
 
