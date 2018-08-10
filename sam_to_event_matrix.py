@@ -83,7 +83,7 @@ def main():
 	sum = {"m":0, "mm":0, "io":0, "ix":0, "do":0, "dx":0}
 
 	recordNum = alignmentNum = 0
-	for a in read_sam_plain(stdin):
+	for a in read_sam_plain(stdin,minMapQ=minMapQ):
 		recordNum += 1
 		if (reportProgress != None) and (recordNum % reportProgress == 0):
 			sum["events"] = (sum["m"] + sum["mm"] + sum["io"] + sum["ix"] + sum["do"] + sum["dx"])
@@ -282,7 +282,7 @@ SAM_MAPQ_COLUMN  = 4
 SAM_CIGAR_COLUMN = 5
 SAM_MIN_COLUMNS  = 11
 
-def read_sam_plain(f):
+def read_sam_plain(f,minMapQ=None):
 	lineNumber = 0
 	for line in f:
 		lineNumber += 1
@@ -305,6 +305,10 @@ def read_sam_plain(f):
 		a.mapQ       = int(fields[SAM_MAPQ_COLUMN])
 
 		if (a.rName == "*"):
+			yield a
+			continue
+
+		if (minMapQ != None) and (a.mapQ < minMapQ):
 			yield a
 			continue
 
