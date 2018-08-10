@@ -193,20 +193,26 @@ def sam_to_events(a):
 	# sanity check
 
 	if (nMatch + nMismatch != cigarMatch):
-		warning = "problem at line %d nMatch+nMismatch!=cigarMatch (%d+%d!=%d)\n%s\n%s" \
-		        % (a.lineNumber,nMatch,nMismatch,cigarMatch,a.cigar,a.mdTag)
+		warning = "problem at line %d nMatch+nMismatch!=cigarMatch (%d+%d!=%d)" \
+		        % (a.lineNumber,nMatch,nMismatch,cigarMatch)
+		warning += ("\n" + a.cigar) if (len(a.cigar) < 200) else ("\n(cigar too long -- %d)" % len(a.cigar))
+		warning += ("\n" + a.mdTag) if (len(a.mdTag) < 200) else ("\n(mdTag too long -- %d)" % len(a.mdTag))
 		if (warnOnError): return warning
 		raise ValueError, warning
 
 	if (mdTagDelO != nDelO):
-		warning = "problem at line %d mdTagDelO!=nDelO (%d!=%d)\n%s\n%s" \
-		        % (a.lineNumber,mdTagDelO,nDelO,a.cigar,a.mdTag)
+		warning = "problem at line %d mdTagDelO!=nDelO (%d!=%d)" \
+		        % (a.lineNumber,mdTagDelO,nDelO)
+		warning += ("\n" + a.cigar) if (len(a.cigar) < 200) else ("\n(cigar too long -- %d)" % len(a.cigar))
+		warning += ("\n" + a.mdTag) if (len(a.mdTag) < 200) else ("\n(mdTag too long -- %d)" % len(a.mdTag))
 		if (warnOnError): return warning
 		raise ValueError, warning
 
 	if (mdTagDelX != nDelX):
-		warning = "problem at line %d mdTagDelX!=nDelX (%d!=%d)\n%s\n%s" \
-		        % (a.lineNumber,mdTagDelX,nDelX,a.cigar,a.mdTag)
+		warning = "problem at line %d mdTagDelX!=nDelX (%d!=%d)" \
+		        % (a.lineNumber,mdTagDelX,nDelX)
+		warning += ("\n" + a.cigar) if (len(a.cigar) < 200) else ("\n(cigar too long -- %d)" % len(a.cigar))
+		warning += ("\n" + a.mdTag) if (len(a.mdTag) < 200) else ("\n(mdTag too long -- %d)" % len(a.mdTag))
 		if (warnOnError): return warning
 		raise ValueError, warning
 
