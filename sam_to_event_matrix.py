@@ -12,6 +12,9 @@ def usage(s=None):
 	message = """
 
 usage: cat <sam_file> | sam_to_event_matrix [options]
+  --mapq=<num>            ignore alignments with mapping quality (the SAM MAPQ
+                          field) below <num>
+                          (by default, we accept any mapping quality)
   --withheader            include a header line in the output
   --sumonly               include only a summation line in the output
                           (by default, we output a separate line for each
@@ -47,6 +50,7 @@ def main():
 
 	# parse the command line
 
+	minMapQ        = None
 	writeHeader    = False
 	writeWhat      = "per alignment"
 	warnOnError    = False
@@ -57,7 +61,9 @@ def main():
 		if ("=" in arg):
 			argVal = arg.split("=",1)[1]
 
-		if (arg in ["--withheader","--with=header","--with:header"]):
+		if (arg.startswith("--mapq=")) or (arg.startswith("--MAPQ=")) or (arg.startswith("MAPQ=")):
+			minMapQ = int(argVal)
+		elif (arg in ["--withheader","--with=header","--with:header"]):
 			writeHeader = True
 		elif (arg in ["--sumonly","--sum=only","--sum:only"]):
 			writeWhat = "sum only"
@@ -92,6 +98,7 @@ def main():
 			break
 
 		if (a.rName == "*"): continue  # read did not align
+		if (minMapQ != None) and (a.mapQ < minMapQ): continue
 
 		alignmentNum += 1
 		events = sam_to_events(a)
@@ -271,6 +278,7 @@ class Alignment: pass
 
 SAM_QNAME_COLUMN = 0
 SAM_RNAME_COLUMN = 2
+SAM_MAPQ_COLUMN  = 4
 SAM_CIGAR_COLUMN = 5
 SAM_MIN_COLUMNS  = 11
 
@@ -294,6 +302,7 @@ def read_sam_plain(f):
 		a.rName      = fields[SAM_RNAME_COLUMN]
 		a.qName      = fields[SAM_QNAME_COLUMN]
 		a.cigar      = fields[SAM_CIGAR_COLUMN]
+		a.mapQ       = int(fields[SAM_MAPQ_COLUMN])
 
 		if (a.rName == "*"):
 			yield a
