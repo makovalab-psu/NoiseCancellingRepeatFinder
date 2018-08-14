@@ -17,6 +17,7 @@ class CatalogEntry: pass
 # pacbio   mm=1.30% i=6.37% d=3.62% is from Guiblet et al (submitted)
 # pacbio   mm=1.7%  i=8.9%  d=4.3%  is derived from GIAB HG002 blasr alignments
 # pacbio   mm=1%    i=12%   d=2%    is from readsim-1.6 (ref [1] below)
+# nanopore mm=4.60% i=3.78% d=7.73% is derived from GIAB HG002 minimap2 alignments
 # nanopore mm=7.4%  i=2%    d=10.2% is derived from data from Jain et al (ref [2] below)
 # nanopore mm=3%    i=3%    d=3%    is from readsim-1.6 (ref [1] below)
 #
@@ -34,7 +35,8 @@ class CatalogEntry: pass
 errorProfilePacbio          = {"mm":0.0130, "i":0.0637, "d":0.0362}
 errorProfilePacbioGiab      = {"mm":0.0170, "i":0.0890, "d":0.0430}
 errorProfilePacbioReadsim   = {"mm":0.01,   "i":0.12,   "d":0.02  }
-errorProfileNanopore        = {"mm":0.074,  "i":0.02,   "d":0.102 }
+errorProfileNanoporeV2      = {"mm":0.0460, "i":0.0378, "d":0.0773}
+errorProfileNanoporeV1      = {"mm":0.074,  "i":0.02,   "d":0.102 }
 errorProfileNanoporeReadSim = {"mm":0.03,   "i":0.03,   "d":0.03  }
 
 
@@ -134,24 +136,34 @@ def main():
 				minFill = None
 			if (minFill == 0):
 				minFill = None
-		elif (arg == "--errors=pacbio"):
-			errorProfile = "pacbio"
-		elif (arg == "--errors=pacbio.giab"):
-			errorProfile = "pacbio.giab"
-		elif (arg == "--errors=pacbio.readsim"):
-			errorProfile = "pacbio.readsim"
-		elif (arg == "--errors=nanopore"):
-			errorProfile = "nanopore"
-		elif (arg == "--errors=nanopore.readsim"):
-			errorProfile = "nanopore.readsim"
 		elif (arg.startswith("--errors=")):
-			if (":" in argVal):
+			errorProfile = None
+			if (argVal in ["pacbio","pacbio.v1","pacbio.Guiblet","pacbio.guiblet"]):
+				errorProfile = errorProfilePacbio
+			elif (argVal in ["pacbio.v2","pacbio.GIAB","pacbio.giab"]):
+				errorProfile = errorProfilePacbioGiab
+			elif (argVal in ["pacbio.readsim"]):
+				errorProfile = errorProfilePacbioReadsim
+			elif (argVal in ["nanopore","nanopore.v2","nanopore.GIAB","nanopore.giab"]):
+				errorProfile = errorProfileNanoporeV1
+			elif (argVal in ["nanopore.v1","nanopore.Jain","nanopore.jain"]):
+				errorProfile = errorProfileNanoporeV1
+			elif (argVal in ["nanopore.readsim"]):
+				errorProfile = errorProfileNanoporeReadSim
+			elif (":" in argVal):
 				try:
 					errorProfile = parse_error_spec(argVal)
 				except ValueError:
-					usage("\"%s\" is not a valid error spec" % argVal)
+					pass
 			else:
-				errorProfile = parse_probability(argVal)
+				p = parse_probability(argVal)
+				errorProfile = {"mm":p, "i":p, "d":p }
+			if (errorProfile == None):
+				usage("\"%s\" is not a valid error spec" % argVal)
+			subProb       = errorProfile["mm"]
+			insOpenProb   = errorProfile["i"]
+			delOpenProb   = errorProfile["d"]
+			insExtendProb = delExtendProb = 0.0
 		elif (arg.startswith("--catalog=")):
 			catalogFilename = argVal
 		elif (arg.startswith("--wrap=")):
@@ -322,7 +334,7 @@ def main():
 	elif (errorProfile == "pacbio.readsim"):
 		profile = errorProfilePacbioReadsim
 	elif (errorProfile in ["nanopore","nanopore.Jain","nanopore.jain","nanopore.v1"]):
-		profile = errorProfileNanopore
+		profile = errorProfileNanoporeV1
 	elif (errorProfile == "nanopore.readsim"):
 		profile = errorProfileNanoporeReadSim
 	elif (type(errorProfile) == float):
