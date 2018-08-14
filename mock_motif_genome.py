@@ -145,7 +145,7 @@ def main():
 			elif (argVal in ["pacbio.readsim"]):
 				errorProfile = errorProfilePacbioReadsim
 			elif (argVal in ["nanopore","nanopore.v2","nanopore.GIAB","nanopore.giab"]):
-				errorProfile = errorProfileNanoporeV1
+				errorProfile = errorProfileNanoporeV2
 			elif (argVal in ["nanopore.v1","nanopore.Jain","nanopore.jain"]):
 				errorProfile = errorProfileNanoporeV1
 			elif (argVal in ["nanopore.readsim"]):
