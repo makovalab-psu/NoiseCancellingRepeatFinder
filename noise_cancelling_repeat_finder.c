@@ -30,30 +30,34 @@ char* programRevisionDate    = REVISION_DATE;
 
 motif*	motifList = NULL;
 
-lascores defaultScoring  =  { 2,  5,	// match, mismatch
-                              4,  11,	// insert-open, -extend
-                              5,  5,	// delete-open, -extend
-                              0 };		// minimum score
-lascores pacbioScoring   =  { 10, 35,	// match, mismatch
-                              33, 21,	// insert-open, -extend
-                              6,  28,	// delete-open, -extend
-                              0 };		// minimum score
-lascores pacbioScoringV2 =  { 10, 51,	// match, mismatch
-                              47, 59,	// insert-open, -extend
-                              43, 23,	// delete-open, -extend
-                              0 };		// minimum score
-lascores pacbioScoringV1 =  { 6,  14,	// match, mismatch
-                              7,  22,	// insert-open, -extend
-                              12, 12,	// delete-open, -extend
-                              0 };		// minimum score
-lascores nanoporeScoring  = { 10, 36,	// match, mismatch
-                              33, 37,	// insert-open, -extend
-                              37, 44,	// delete-open, -extend
-                              0 };		// minimum score
-lascores nanoporeScoringV1= { 10, 74,	// match, mismatch
-                              70, 99,	// insert-open, -extend
-                              45, 30,	// delete-open, -extend
-                              0 };		// minimum score
+lascores defaultScoring    = { 2,  5,	// match, mismatch
+                               4,  11,	// insert-open, -extend
+                               5,  5,	// delete-open, -extend
+                               0 };		// minimum score
+lascores pacbioScoring     = { 10, 35,	// match, mismatch
+                               33, 21,	// insert-open, -extend
+                               6,  28,	// delete-open, -extend
+                               0 };		// minimum score
+lascores pacbioScoringV2   = { 10, 51,	// match, mismatch
+                               47, 59,	// insert-open, -extend
+                               43, 23,	// delete-open, -extend
+                               0 };		// minimum score
+lascores pacbioScoringV1   = { 6,  14,	// match, mismatch
+                               7,  22,	// insert-open, -extend
+                               12, 12,	// delete-open, -extend
+                               0 };		// minimum score
+lascores nanoporeScoring   = { 10, 63,	// match, mismatch
+                               51, 98,	// insert-open, -extend
+                               27, 34,	// delete-open, -extend
+                               0 };		// minimum score
+lascores nanoporeScoringV2 = { 10, 36,	// match, mismatch
+                               33, 37,	// insert-open, -extend
+                               37, 44,	// delete-open, -extend
+                               0 };		// minimum score
+lascores nanoporeScoringV1 = { 10, 74,	// match, mismatch
+                               70, 99,	// insert-open, -extend
+                               45, 30,	// delete-open, -extend
+                               0 };		// minimum score
 lascores scoring;
 lacontrol control;
 int     reportScoring     = false;
@@ -743,13 +747,23 @@ static void parse_options (int _argc, char** _argv)
 			}
 
 		// --scoring=nanopore
-		//    or --scoring=nanopore.v2 (unadvertised)
+		//    or --scoring=nanopore.v3 (unadvertised)
 
 		if ((strcmp (arg, "--scoring=nanopore")   == 0)
-		 || (strcmp (arg, "--scoring=nanopore.v2") == 0))
+		 || (strcmp (arg, "--scoring=nanopore.v3") == 0))
 			{
 			u32	saveMinScore = scoring.minScore;
 			scoring = nanoporeScoring;
+			scoring.minScore = saveMinScore;
+			goto next_arg;
+			}
+
+		// --scoring=nanopore.v2 (unadvertised)
+
+		if (strcmp (arg, "--scoring=nanopore.v2") == 0)
+			{
+			u32	saveMinScore = scoring.minScore;
+			scoring = nanoporeScoringV2;
 			scoring.minScore = saveMinScore;
 			goto next_arg;
 			}
