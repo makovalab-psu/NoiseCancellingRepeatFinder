@@ -29,6 +29,7 @@ usage: cat <alignment_summary> | observed_vs_truth <truth_catalog> [options]
                          (default is 95%)
   --detail=<file>        Report separate true positive rates for each observed
                          interval
+  --overcovered          Report over-covered rates too
 
 We'll consider each base in the genome as an item to be classified. The
 alignment summary tells us the classification of each base -- each base in an
@@ -80,12 +81,13 @@ def main():
 
 	# parse the command line
 
-	truthFilename   = None
-	alignmentTarget = "genome"
-	detectionThresh = 0.95
-	detailFilename  = None
-	motifs          = None
-	debug           = []
+	truthFilename     = None
+	alignmentTarget   = "genome"
+	detectionThresh   = 0.95
+	detailFilename    = None
+	reportOvercovered = False
+	motifs            = None
+	debug             = []
 
 	for arg in argv[1:]:
 		if ("=" in arg):
@@ -110,6 +112,8 @@ def main():
 				usage("detection threshold cannot be more than 100% (%s)" % arg)
 		elif (arg.startswith("--detail=")):
 			detailFilename = argVal
+		elif (arg == "--overcovered"):
+			reportOvercovered = True
 		elif (arg == "--debug"):
 			debug += ["debug"]
 		elif (arg.startswith("--debug=")):
@@ -170,9 +174,11 @@ def main():
 			(prevStart,prevEnd) = (s,e)
 
 	# collect the observations
-	# $$$ will need to allow overlaps in this, so we can check for over-covered intervals
+	# nb: we allow overlaps in this (but separate them), so we can check for
+	#     over-covered intervals
 
 	observed = {}
+	overlaps = {}
 
 	for (chrom,start,end,motif) in read_intervals(stdin,(2,3,4,1)):
 		if (motifs != None):
@@ -186,12 +192,20 @@ def main():
 		observed[chrom] += [(start,end)]
 
 	for chrom in observed:
-		observed[chrom] = merge_intervals(observed[chrom])
+		(observed[chrom],overlaps[chrom]) = merge_intervals(observed[chrom])
+		if ("overlap" in debug):
+			for (start,end) in overlaps[chrom]:
+				print >>stderr, "observation overlap: %s:%d..%d" \
+				              % (chrom,start,end)
+		if (not reportOvercovered):
+			assert (overlaps[chrom] == []), \
+			       "observations for %s contain overlaps on %s:\n%s" \
+			     % (motif,chrom,
+			        "\n".join(["%d..%d"%(start,end) for (start,end) in overlaps[chrom]]))
 
 	# compute true positives and false positives for each observed interval
 	#
 	# See reference [1].
-	# $$$ need to compute over-covered intervals also
 
 	pTotal = tpTotal = fpTotal = 0
 	for chrom in chromOrder:
@@ -236,6 +250,26 @@ def main():
 			if (tp >= length*detectionThresh):  # (tp/length >= detectionThresh)
 				detected += 1
 
+	# compute over-covered (as true positives and false positives)
+
+	if (reportOvercovered):
+		tpoTotal = fpoTotal = 0
+		for chrom in chromOrder:
+			if (chrom not in overlaps): continue
+
+			truthOnChrom = None
+			if (chrom in truth):
+				truthOnChrom = truth[chrom]
+
+			for (start,end) in overlaps[chrom]:
+				length = end-start
+				tp = 0
+				if (truthOnChrom != None):
+					tp = overlap_count(start,end,truthOnChrom)
+				fp = length - tp
+				tpoTotal += tp
+				fpoTotal += fp
+
 	# report
 
 	if (tpTotal+fnTotal == 0):
@@ -266,6 +300,12 @@ def main():
 	else:
 		print "%s\t%s/%s\t%5.3f%%" \
 		    % ("DETECTED",detected,len(perInterval),100.0*detected/len(perInterval))
+
+	if (reportOvercovered):
+		print "%s\t%s" \
+		    % ("TP-OVERCOVERED",tpoTotal)
+		print "%s\t%s" \
+		    % ("FP-OVERCOVERED",fpoTotal)
 
 	if (detailFilename != None):
 		if (alignmentTarget == "genome"): chromName = "chrom"
@@ -330,13 +370,16 @@ def read_intervals(f,columns,filename=None):
 
 
 # merge_intervals--
-#   Sort intervals and merge overlaps
+#   Sort intervals and merge overlaps; the first returned list is the union of
+#	the intervals; any subintervals that overlap are reported in the second
+#	returned list (and this list may itself contain overlaps)
 
 def merge_intervals(intervals):
 	intervals = list(intervals)
 	intervals.sort()
 
 	newIntervals = []
+	overlaps     = []
 
 	start = None
 	for (s,e) in intervals:
@@ -345,19 +388,22 @@ def merge_intervals(intervals):
 		elif (s > end):
 			newIntervals += [(start,end)]
 			(start,end) = (s,e)
-		elif (e > end):
+		elif (e <= end):
+			overlaps += [(s,e)]
+		else: # if (e > end):
+			overlaps += [(s,end)]
 			end = e
 
 	if (start != None):
 		newIntervals += [(start,end)]
 
-	return newIntervals
+	return (newIntervals,overlaps)
 
 
 # overlap_count--
-#   Report the number of and interval's bases that overlap a list of intervals
+#   Report the number of an interval's bases that overlap a list of intervals
 #
-# We assume the intervals is sorted and contains no overlaps.
+# We assume the intervals are sorted and contain no overlaps.
 
 def overlap_count(start,end,intervals):
 	baseCount = 0
