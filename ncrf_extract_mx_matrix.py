@@ -39,7 +39,7 @@ def main():
 
 		if (arg.startswith("--head=")):
 			headLimit = int_with_unit(argVal)
-		elif (arg in ["--noendmark]","--noeof","--nomark"]):   # (unadvertised)
+		elif (arg in ["--noendmark","--noeof","--nomark"]):   # (unadvertised)
 			requireEof = False
 		elif (arg.startswith("--")):
 			usage("unrecognized option: %s" % arg)

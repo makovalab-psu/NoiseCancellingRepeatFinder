@@ -61,7 +61,7 @@ def main():
 			headLimit = int_with_unit(argVal)
 		elif (arg == "--report:clumps") or (arg == "--report=clumps"):
 			reportClumps = True
-		elif (arg in ["--noendmark]","--noeof","--nomark"]):   # (unadvertised)
+		elif (arg in ["--noendmark","--noeof","--nomark"]):   # (unadvertised)
 			requireEof = False
 		elif (arg == "--debug"):
 			debug += ["debug"]

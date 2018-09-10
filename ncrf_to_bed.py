@@ -48,7 +48,7 @@ def main():
 			if (not (0.0 <= minMRatio <= 1.0)):
 				exit("%s: noise has to be between 0 and 1 (e.g. 0.15 or 15%%)\n%s"
 				   % (os_path.basename(argv[0]),arg))
-		elif (arg in ["--noendmark]","--noeof","--nomark"]):   # (unadvertised)
+		elif (arg in ["--noendmark","--noeof","--nomark"]):   # (unadvertised)
 			requireEof = False
 		elif (arg.startswith("--")):
 			usage("unrecognized option: %s" % arg)

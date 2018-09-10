@@ -37,7 +37,7 @@ def main():
 	filenames     = []
 
 	for arg in argv[1:]:
-		if (arg in ["--noendmark]","--noeof","--nomark"]):   # (unadvertised)
+		if (arg in ["--noendmark","--noeof","--nomark"]):   # (unadvertised)
 			requireEof = False
 		elif (arg in ["--markend]","--markeof"]):
 			requireEof    = False

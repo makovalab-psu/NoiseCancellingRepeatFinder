@@ -60,7 +60,7 @@ def main():
 			sortBy = "name,pos+"
 		elif (arg == "--sortby=position-") or (arg == "--sortby=pos-"):
 			sortBy = "name,pos-"
-		elif (arg in ["--noendmark]","--noeof","--nomark"]):   # (unadvertised)
+		elif (arg in ["--noendmark","--noeof","--nomark"]):   # (unadvertised)
 			requireEof = False
 		elif (arg.startswith("--")):
 			usage("unrecognized option: %s" % arg)

@@ -176,7 +176,7 @@ def main():
 			reportAs = "matrix"
 		elif (arg == "--report:silent") or (arg == "--report=silent"):   # (unadvertised)
 			reportAs = "silent"
-		elif (arg in ["--noendmark]","--noeof","--nomark"]):   # (unadvertised)
+		elif (arg in ["--noendmark","--noeof","--nomark"]):   # (unadvertised)
 			requireEof = False
 		elif (arg.startswith("--seed=")):
 			seed = argVal

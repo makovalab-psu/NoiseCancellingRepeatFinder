@@ -36,7 +36,7 @@ def main():
 
 		if (arg.startswith("--minwordratio=")) or (arg.startswith("--ratio=")) or (arg.startswith("R=")):
 			countRatio = float_or_fraction(argVal)
-		elif (arg in ["--noendmark]","--noeof","--nomark"]):   # (unadvertised)
+		elif (arg in ["--noendmark","--noeof","--nomark"]):   # (unadvertised)
 			requireEof = False
 		elif (arg == "--debug"):
 			debug += ["debug"]
