@@ -89,7 +89,7 @@ that fail a test based on that assumption.
 
 Error counts are often too small for the statistical test, so a test based on
 match counts is used instead. However, an insertion error does not reduce the
-match count at any position, so by default we decreases matches by the number of
+match count at any position, so by default we decrease matches by the number of
 insertions at that position.
 
 The input alignments must include position event information. This can be
