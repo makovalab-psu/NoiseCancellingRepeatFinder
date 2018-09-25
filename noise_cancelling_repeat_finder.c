@@ -2189,7 +2189,11 @@ static seglist* find_error_clumps
 	alignmentLength = aIx;
 
 	if (!hasErrors)
-		return add_segment (&clumps,0,alignmentLength);
+		{
+		if (dbgClumpDetection)
+			fprintf (stderr, "the alignment has no errors, hence it has no clumps\n");
+		return NULL;
+		}
 
 	// search for clumps, intervals for which the average is above (or at) the
 	// threshold;  this is equivalent to intervals in which the sum, minus the
