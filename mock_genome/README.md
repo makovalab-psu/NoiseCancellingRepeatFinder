@@ -87,4 +87,45 @@ The coverage and read length distribution were kept the same, thus the number
 of reads is much larger. Because of this increase in file size, all the files
 are included in gzipped form.
 
+# Truth File Formats
 
+When a mock genome is generated, the positions of the embedded repeat arrays
+*in the genome* are recorded in genome_name.truth.dat.  This is a
+whitespace-delimited text file with seven columns. The first line is a header
+line, beginning with a # and providing the names of the columns.
+
+The columns are
+```bash  
+chrom,start,end  The interval containing the repeat array. Chrom is usually
+                 the name of the genome. Start and end are origin-zero, half
+                 open.
+motif            The repeated motif. This has an optional suffix describing
+                 the offset and orientation of the motif. For example,
+                 "GGAAT.2+" indicates the array begins with the 3rd character
+                 (the first A) and is on the forward strand.
+rptLen           The number of bases in the repeat array.
+len              The length of the interval containing the array (the same as
+                 end-start). This will usually be identical to rptLen, but
+                 allows for the possibility that some noise process has changed
+                 the length of the array before it was embedded in the genome.
+fill             The length of random sequence inserted between this repeat
+                 array and the closest one that precedes it.
+```  
+
+When simulated reads are pulled from a mock genome is generated, the positions
+of the embedded repeat arrays *in the reads* are recorded in
+genome_name.technology_name.truth.dat. This is a whitespace-delimited text
+file with seven columns. There is no header line.
+
+The columns are
+```bash  
+chrom,gStart,gEnd  The interval *on the genome* containing the portion of the
+                   repeat array that was sampled by this read. Start and end
+                   are origin-zero, half open.
+read,rStart,rEnd   The interval *on the read* corresponding to the interval on
+                   the genome. This will usually have a different length than
+                   the interval on the genome, because of simulated sequencing
+                   noise.
+motif              The repeated motif. This has an optional suffix describing
+                   the orientation of the motif *on the read*.
+```  
