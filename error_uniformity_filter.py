@@ -4,9 +4,6 @@ Filter Noise Cancelling Repeat Finder alignments, discarding alignments that
 don't (seem to) have uniformly distributed matches across the motif unit.
 """
 
-# TODO: pass data to R via a temporary file, rather than on the Rscript
-#       command line
-
 import subprocess
 from sys        import argv,stdin,stdout,stderr,exit
 from os         import path as os_path
@@ -60,6 +57,9 @@ usage: cat <output_from_NCRF> | error_uniformity_filter [options]
                         (this is the default)
   --trials=<number>     number of trials for the min-max test
                         (default is 1000)
+  --trials=<number>/<number> numbers of successes needed and rials for the
+                        min-max test; e.g. "5/10000" will do 10 thousand trials
+                        and require at least five success to "pass"
   --discard:good        discard the "good" alignments instead of the "bad" ones
                         (by default we discard the "bad" alignments) 
   --discard:none        don't discard any alignments, just report the test
@@ -122,20 +122,21 @@ def main():
 
 	# parse the command line
 
-	testMethod     = "min-max"
-	numTrials      = 1000          # (only used for testMethod == "min-max")
-	effectSize     = 0.3           # (only used for testMethod == "chi-square")
-	power          = 0.8           # (only used for testMethod == "chi-square")
-	discardWhich   = "bad"
-	testWhich      = "matches-insertions"
-	warnOnUntested = False
-	headLimit      = None
-	batchSize      = None  # (will be replace by method-specific result)
-	reportAs       = "ncrf"
-	requireEof     = True
-	prngSeed       = defaultPrngSeed
-	reportProgress = None
-	debug          = []
+	testMethod      = "min-max"
+	numTrials       = 1000          # (only used for testMethod == "min-max")
+	numNeededToPass = 1             # (only used for testMethod == "min-max")
+	effectSize      = 0.3           # (only used for testMethod == "chi-square")
+	power           = 0.8           # (only used for testMethod == "chi-square")
+	discardWhich    = "bad"
+	testWhich       = "matches-insertions"
+	warnOnUntested  = False
+	headLimit       = None
+	batchSize       = None  # (will be replace by method-specific result)
+	reportAs        = "ncrf"
+	requireEof      = True
+	prngSeed        = defaultPrngSeed
+	reportProgress  = None
+	debug           = []
 
 	for arg in argv[1:]:
 		if ("=" in arg):
@@ -144,7 +145,16 @@ def main():
 		if (arg == "--method=min-max"):
 			testMethod = "min-max"
 		elif (arg.startswith("--trials=")):
-			numTrials = int_with_unit(argVal)
+			if ("/" in argVal):
+				(numNeededToPass,numTrials) = map(int_with_unit,argVal.split("/",1))
+				if (numTrials < 1):
+					usage("bad value in: %s (trials must be at least 1)" % arg)
+				if (not 1 <= numNeededToPass <= numTrials):
+					usage("bad value in: %s (num-in-bounds must be in range 1..trials)" % arg)
+			else:
+				(numNeededToPass,numTrials) = (1,int_with_unit(argVal))
+				if (numTrials < 1):
+					usage("bad value in: %s (trials must be at least 1)" % arg)
 		elif (arg in ["--method=chi-squared","--method=chi-square"]):    # (unadvertised, see [4])
 			testMethod = "chi-squared"
 		elif (arg.startswith("--effectsize=")):                          # (unadvertised, see [4])
@@ -284,7 +294,7 @@ def main():
 				        + "\nHere's what R reported:\n%s")
 				   % (os_path.basename(argv[0]),batchStartIx,batchEndIx,batchResult))
 		else:  # if (testMethod == "min-max"):
-			batchResult = min_max_tests(aBatch,mxBatch,batchStartIx,testWhich,numTrials)
+			batchResult = min_max_tests(aBatch,mxBatch,batchStartIx,testWhich,numTrials,numNeededToPass)
 			if (type(batchResult) == str):
 				exit(("%s: internal error: having trouble with min-max test"
 				        + " (with alignment batch %d..%d)"
@@ -572,6 +582,8 @@ def shell_command_exists(commandName):
 #   False ==> reject null hypothesis;       the counts are biased
 #   None  ==> unable to run the test
 #
+# The following paragraph only applies when numNeededToPass is 1.
+#
 # Note that for a given alignment, we stop generating random count vectors as
 # soon as we have a range of min and max that will contain the alignment's min
 # and max. In many cases this happens in the first few trials if the alignment
@@ -579,8 +591,12 @@ def shell_command_exists(commandName):
 # full complement of trials. In one test with motifLen=5 and alignments longer
 # than 500 bp, the average number of trials before an alignment passed was just
 # under 50.
+#
+# If the user has requested "min-max:complete" in debug, we always run the full
+# number of trials.
 
-def min_max_tests(aBatch,mxBatch,batchStartIx,testWhich,numTrials):
+
+def min_max_tests(aBatch,mxBatch,batchStartIx,testWhich,numTrials,numNeededToPass=1):
 	motifLen = len(mxBatch[0]) / 2
 
 	results = [None] * len(mxBatch)
@@ -590,14 +606,14 @@ def min_max_tests(aBatch,mxBatch,batchStartIx,testWhich,numTrials):
 		else:  # this includes "matches" or "matches-insertions"
 			testCounts = mxBatch[rowIx][0:motifLen]
 
-		minCount = min(testCounts)
-		maxCount = max(testCounts)
+		minRealCount = min(testCounts)
+		maxRealCount = max(testCounts)
 
 		numEvents    = sum(testCounts)
 		alignmentLen = len(aBatch[rowIx].seqText)
 
-		minTrialCount = maxTrialCount = None
-		minProvenOk = maxProvenOk = False
+		minProvenOk = maxProvenOk = 0
+		realPasses = False  # (until proven otherwise)
 		trialsMade = 0
 		for trialNum in xrange(numTrials):
 			positionToCount = [0] * motifLen  # (list performed faster than dict)
@@ -609,30 +625,31 @@ def min_max_tests(aBatch,mxBatch,batchStartIx,testWhich,numTrials):
 
 			trialsMade += 1
 
-			if (not minProvenOk):
+			if (minProvenOk < numNeededToPass) or ("min-max:complete" in debug):
 				trialMin = min([positionToCount[pos] for pos in xrange(motifLen)])
-				if (minTrialCount == None) or (trialMin < minTrialCount):
-					minTrialCount = trialMin
-					minProvenOk = (minCount >= minTrialCount)
-			if (not maxProvenOk):
+				if (minRealCount >= trialMin): minProvenOk += 1
+			if (maxProvenOk < numNeededToPass) or ("min-max:complete" in debug):
 				trialMax = max([positionToCount[pos] for pos in xrange(motifLen)])
-				if (maxTrialCount == None) or (trialMax > maxTrialCount):
-					maxTrialCount = trialMax
-					maxProvenOk = (maxCount <= maxTrialCount)
+				if (maxRealCount <= trialMax): maxProvenOk += 1
 
-			if (minProvenOk) and (maxProvenOk): break
+			if (minProvenOk >= numNeededToPass) and (maxProvenOk >= numNeededToPass):
+				realPasses = True
+				if ("min-max:complete" not in debug):
+					break
 
-		results[rowIx] = (minCount >= minTrialCount) and (maxCount <= maxTrialCount)
+		results[rowIx] = realPasses
 
 		if   ("min-max" in debug) \
 		  or (("min-max:fail" in debug) and (not results[rowIx])):
-			print >>stderr, "[%d] (%d trials) %d/%d <%s> real:%d..%d random:%d..%d %s" \
+			print >>stderr, ("[%d] %s"
+			               + " (%d trials, real min>=%d trials, real max<=%d trials)"
+			               + " evRatio=%d/%d, real min..max=%d..%d, counts=<%s>") \
 			              % (1+batchStartIx+rowIx,
-			                 trialsMade,
+			                 "pass" if (results[rowIx]) else "fail",
+			                 trialsMade,minProvenOk,maxProvenOk,
 			                 numEvents,alignmentLen,
-			                 " ".join(map(str,testCounts)),
-			                 minCount,maxCount,minTrialCount,maxTrialCount,
-			                 "pass" if (results[rowIx]) else "fail")
+			                 minRealCount,maxRealCount,
+			                 ",".join(map(str,testCounts)))
 
 	return results
 
