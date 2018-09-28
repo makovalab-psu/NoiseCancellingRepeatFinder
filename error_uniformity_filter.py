@@ -56,9 +56,9 @@ usage: cat <output_from_NCRF> | error_uniformity_filter [options]
   --method=min-max      judge alignments by a "min-max" test  
                         (this is the default)
   --trials=<number>     number of trials for the min-max test
-                        (default is 1000)
+                        (default is 10K)
   --trials=<number>/<number> numbers of successes needed and rials for the
-                        min-max test; e.g. "5/10000" will do 10 thousand trials
+                        min-max test; e.g. "5/10K" will do 10 thousand trials
                         and require at least five success to "pass"
   --discard:good        discard the "good" alignments instead of the "bad" ones
                         (by default we discard the "bad" alignments) 
@@ -123,7 +123,7 @@ def main():
 	# parse the command line
 
 	testMethod      = "min-max"
-	numTrials       = 1000          # (only used for testMethod == "min-max")
+	numTrials       = 10*1000       # (only used for testMethod == "min-max")
 	numNeededToPass = 1             # (only used for testMethod == "min-max")
 	effectSize      = 0.3           # (only used for testMethod == "chi-square")
 	power           = 0.8           # (only used for testMethod == "chi-square")
