@@ -75,6 +75,9 @@ usage: cat <output_from_NCRF> | error_uniformity_filter [options]
                         test; two special cases are "default" (use the built-in
                         default seed) and "none" (don't seed the random number
                         generator)
+  --subsample=<k>/<n>   Conceptually split the alignments by into <n> groups,
+                        and only process the <k>th group; <k> ranges from 1 to
+                        <n>
   --head=<number>       limit the number of input alignments
   --progress=<number>   periodically report how many alignments we've tested
   --batch=<number>      number of input alignments processed by each call to R;
@@ -102,7 +105,12 @@ is added to each alignment
 # positional min-max: match-insert uniformity not rejected
 # positional min-max: untested
 The "untested" case indicates that the min-max test could not be performed,
-usually because one of the positional match counts is too small."""
+usually because one of the positional match counts is too small.
+
+The user should be aware that the results aren't necessarily determinstic.
+When a PRNG is in play (as for min-max), the result for an alignment depends
+on the state of the PRNG; and the state of the PRNG depends on all the
+alignments that preceded the one being tested."""
 
 # options no longer advertised:
 #  --method=chi-squared  judge alignments by a chi-squared test
@@ -130,6 +138,8 @@ def main():
 	discardWhich    = "bad"
 	testWhich       = "matches-insertions"
 	warnOnUntested  = False
+	subsampleK      = None
+	subsampleN      = None
 	headLimit       = None
 	batchSize       = None  # (will be replace by method-specific result)
 	reportAs        = "ncrf"
@@ -178,6 +188,10 @@ def main():
 			warnOnUntested = True
 		elif (arg.startswith("--head=")):
 			headLimit = int_with_unit(argVal)
+		elif (arg.startswith("--subsample=")):
+			(subsampleK,subsampleN) = map(int,argVal.split("/",2))
+			if (not 0 < subsampleK <= subsampleN):
+				usage("bad subsample description in %s" % arg)
 		elif (arg.startswith("--progress=")):
 			reportProgress = int_with_unit(argVal)
 		elif (arg.startswith("--batch=")):
@@ -251,7 +265,9 @@ def main():
 
 	(unitLength,alignmentList,mxMatrix) \
 	  = collect_alignments(stdin,testWhich,
-	                       headLimit=headLimit,requireEof=requireEof)
+	                       headLimit=headLimit,
+	                       subsampleK=subsampleK,subsampleN=subsampleN,
+	                       requireEof=requireEof)
 
 	numAlignments = len(alignmentList)
 	if (reportProgress != None):
@@ -387,7 +403,10 @@ def main():
 
 # collect_alignments--
 
-def collect_alignments(f,testWhich,headLimit=None,requireEof=True):
+def collect_alignments(f,testWhich,
+                       headLimit=None,
+                       subsampleK=None,subsampleN=None,
+                       requireEof=True):
 	alignmentList = []
 	mxMatrix = []
 	unitLength = None
@@ -403,6 +422,9 @@ def collect_alignments(f,testWhich,headLimit=None,requireEof=True):
 		if (headLimit != None) and (alignmentNum > headLimit):
 			print >>stderr, "limit of %d alignments reached" % headLimit
 			break
+
+		if (subsampleN != None):
+			if ((alignmentNum-1) % subsampleN != (subsampleK-1)): continue
 
 		if (testWhich == "matches-insertions"):
 			# note [1]
