@@ -16,6 +16,7 @@ usage: cat <output_from_NCRF> | ncrf_words [options]
                        times the motif word's count (e.g. r=0.5 would show the
                        words that occur at least half as often as the motif)
                        (default is 1.0)"""
+  --head=<number>      limit the number of input alignments
 
 	if (s == None): exit (message)
 	else:           exit ("%s\n%s" % (s,message))
@@ -27,6 +28,7 @@ def main():
 	# parse the command line
 
 	countRatio = 1
+	headLimit  = None
 	requireEof = True
 	debug      = []
 
@@ -36,6 +38,8 @@ def main():
 
 		if (arg.startswith("--minwordratio=")) or (arg.startswith("--ratio=")) or (arg.startswith("R=")):
 			countRatio = float_or_fraction(argVal)
+		elif (arg.startswith("--head=")):
+			headLimit = int_with_unit(argVal)
 		elif (arg in ["--noendmark","--noeof","--nomark"]):   # (unadvertised)
 			requireEof = False
 		elif (arg == "--debug"):
@@ -49,10 +53,15 @@ def main():
 
 	# process the alignments
 
-	isFirst = True
+	alignmentNum = 0
 	for a in alignments(stdin,requireEof):
-		if (isFirst): isFirst = False
-		else:         print
+		alignmentNum += 1 
+
+		if (headLimit != None) and (alignmentNum > headLimit):
+			print >>stderr, "limit of %d alignments reached" % headLimit
+			break
+
+		if (alignmentNum > 1): print
 		print "\n".join(a.lines)
 
 		motifText = a.motifText
