@@ -12,11 +12,11 @@ from ncrf_parse  import alignments,reverse_complement,float_or_fraction
 def usage(s=None):
 	message = """
 usage: cat <output_from_NCRF> | ncrf_words [options]
-   --minwordratio=<r>  only show words that have counts that are at least r
-                       times the motif word's count (e.g. r=0.5 would show the
-                       words that occur at least half as often as the motif)
-                       (default is 1.0)"""
-  --head=<number>      limit the number of input alignments
+  --minwordratio=<r>  only show words that have counts that are at least r
+                      times the motif word's count (e.g. r=0.5 would show the
+                      words that occur at least half as often as the motif)
+                      (default is 1.0)
+  --head=<number>     limit the number of input alignments"""
 
 	if (s == None): exit (message)
 	else:           exit ("%s\n%s" % (s,message))
