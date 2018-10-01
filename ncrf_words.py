@@ -6,7 +6,7 @@ Repeat Finder.
 
 from sys         import argv,stdin,stdout,stderr,exit
 from collections import Counter
-from ncrf_parse  import alignments,reverse_complement,float_or_fraction
+from ncrf_parse  import alignments,reverse_complement,int_with_unit,float_or_fraction
 
 
 def usage(s=None):
