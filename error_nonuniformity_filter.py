@@ -10,7 +10,7 @@ from os         import path as os_path
 from random     import seed as random_seed,sample as random_sample,randint
 from ncrf_parse import alignments,parse_probability,int_with_unit,commatize
 
-defaultPrngSeed = "NCRF.error_uniformity_filter"
+defaultPrngSeed = "NCRF.error_uniformity_filter"  # (for backward compatibility)
 
 
 # Implementation Notes:
@@ -52,7 +52,7 @@ defaultPrngSeed = "NCRF.error_uniformity_filter"
 
 def usage(s=None):
 	message = """
-usage: cat <output_from_NCRF> | error_uniformity_filter [options]
+usage: cat <output_from_NCRF> | error_nonuniformity_filter [options]
   --method=min-max      judge alignments by a "min-max" test  
                         (this is the default)
   --trials=<number>     number of trials for the min-max test
@@ -519,7 +519,7 @@ def mx_significance_tests(mxMatrix,testWhich,effectSize,power):
 	selfPath = os_path.dirname(os_path.realpath(__file__))
 
 	rCommand =  []
-	rCommand += ["source('%s/error_uniformity_filter.r')" % selfPath]
+	rCommand += ["source('%s/error_nonuniformity_filter.r')" % selfPath]
 	rCommand += ["mxFlat = c(%s)" % ",".join(map(str,flatten(mxMatrix)))]
 	rArgs = "%d,mxFlat,%s,%.10f,%.10f" % (n,testErrorCounts,effectSize,power)
 	if ("rverbose" in debug): rArgs += ",verbose=T"
