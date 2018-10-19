@@ -526,13 +526,14 @@ static void usage (char* message)
 	fprintf (stderr, "                        (default is zero)\n");
 	fprintf (stderr, "  --stats=events        show match/mismatch/insert/delete counts\n");
 	fprintf (stderr, "  --positionalevents    show match/mismatch/insert/delete counts by motif\n");
-	fprintf (stderr, "                        position (independent of --stats=events)\n");
-	fprintf (stderr, "                        this may be useful for detecting positional bias\n");
+	fprintf (stderr, "                        position (independent of --stats=events); this may be\n");
+	fprintf (stderr, "                        useful for detecting error non-uniformity, to separate\n");
+	fprintf (stderr, "                        perfect repeats from imperfect\n");
 	fprintf (stderr, "  --help=scoring        show options relating to alignment scoring\n");
 	fprintf (stderr, "  --help=allocation     show options relating to memory allocation\n");
 	fprintf (stderr, "  --help=other          show other, less frequently used options\n");
 	fprintf (stderr, "\n");
-	fprintf (stderr, "  The output is usually passed through a series of the ncrf* post-processing\n");
+	fprintf (stderr, "  The output is usually passed through a series of the ncrf_* post-processing\n");
 	fprintf (stderr, "  scripts.\n");
 
 	exit (EXIT_FAILURE);
