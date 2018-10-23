@@ -10,9 +10,23 @@ from ncrf_parse import int_with_unit
 def usage(s=None):
 	message = """
 usage: ncrf_resolve_overlaps <alignment_summary..> [options]
-  <alignment_summary>  (cululative) File(s) containing aligment summaries
-                       for which overlaps are to be resolved
-  --head=<number>      limit the number of input aligment summaries
+  <alignment_summary>    (cumulative) file(s) containing aligment summaries
+                         for which overlaps are to be resolved
+  --head=<number>        limit the number of input aligment summaries
+  --out=<name_template>  file to write overlap groups to; see discussion of
+                         name template below; if this option is absent, all
+                         output is written to the console
+
+The name template either names a single file or a collection of files.  If
+if includes the substring "{motif}", this substring is replaced by a motif name
+and any un-overlapped alignments to that motif are written to that file. If
+the template name doesn't include "{motif}", all un-overlapped alignments and
+overlapping groups are written to one file.
+
+Overlapping groups are either written to the console (if no name template is
+given), to the same file with alignments (if the name template doesn't contain
+"{motif}"), or to a a file separate from the alignments (with "{motif}"
+replaced by "overlaps").
 
 The alignment summaries are usually the output from ncrf_summary. Any file may
 contain alignments for more than one motif.
@@ -29,11 +43,15 @@ Typical input file:
 
 
 def main():
+	global summaryHeaderLine
 	global debug
+
+	summaryHeaderLine = None
 
 	# parse the command line
 
 	inputFilenames = []
+	outTemplate    = None
 	headLimit      = None
 	debug          = []
 
@@ -41,7 +59,9 @@ def main():
 		if ("=" in arg):
 			argVal = arg.split("=",1)[1]
 
-		if (arg.startswith("--head=")):
+		if (arg.startswith("--out=")):
+			outTemplate = argVal
+		elif (arg.startswith("--head=")):
 			headLimit = int_with_unit(argVal)
 		elif (arg == "--debug"):
 			debug += ["debug"]
@@ -54,6 +74,8 @@ def main():
 
 	if (inputFilenames == []):
 		usage("you have to give me at least one summary file")
+
+	writeSingletonsSeparately = (outTemplate != None) and ("{motif}" in outTemplate)
 
 	# collect the alignments
 
@@ -77,19 +99,104 @@ def main():
 
 		f.close()
 
-	# partition the alignments into overlapping clumps
+	# partition the alignments into overlapping groups
 
-	seqToClumps = {}
+	seqToGroups = {}
 
-	for seq in seqToSummaries:
-		seqToClumps[seq] = overlapping_clumps(seqToSummaries[seq])
+	for seq in seqOrder:
+		seqToGroups[seq] = overlapping_groups(seqToSummaries[seq])
 
-	if ("clumps" in debug):
-		for seq in seqToSummaries:
-			for clump in seqToClumps[seq]:
+	if ("groups" in debug):
+		for seq in seqOrder:
+			for group in seqToGroups[seq]:
 				print >>stderr, "==="
-				for summary in clump:
+				for summary in group:
 					print >>stderr,summary.line
+
+	# collect groups by motif subset
+
+	subsetToGroups = {}
+	singletons = set()
+
+	for seq in seqOrder:
+		for group in seqToGroups[seq]:
+			subset = set([summary.motif for summary in group])
+			subset = list(subset)
+			subset.sort()
+			subset = tuple(subset)
+
+			if (subset not in subsetToGroups):
+				subsetToGroups[subset] = [group]
+			else:
+				subsetToGroups[subset] += [group]
+
+			if (len(subset) == 1):
+				singletons.add(subset[0])
+
+	# if we're to report un-overlapped alignments separately, do so now (and
+	# remove them from the groups)
+
+	singletons = list(singletons)
+	singletons.sort()
+
+	if (writeSingletonsSeparately):
+		for motif in singletons:
+			subset = (motif,)
+
+			motifFilename = outTemplate.replace("{motif}",motif)
+			motifF = file(motifFilename,"wt")
+			print >>stderr, "writing to \"%s\"" % motifFilename
+
+			if (summaryHeaderLine != None):
+				print >>motifF,summaryHeaderLine
+			for group in subsetToGroups[subset]:
+				for summary in group:
+					print >>motifF,summary.line
+
+			del subsetToGroups[subset]
+
+	# report overlapping alignment groups (and un-overlapped groups if we
+	# didn't report them already)
+
+	if (outTemplate == None):
+		outF = stdout
+	elif ("{motif}" not in outTemplate):
+		outF = file(outTemplate,"wt")
+		print >>stderr,"writing to \"%s\"" % outTemplate
+	else:
+		outFilename = outTemplate.replace("{motif}","overlaps")
+		outF = file(outFilename,"wt")
+		print >>stderr,"writing to \"%s\"" % outFilename
+
+	motifCountToSubsets = {}
+	for subset in subsetToGroups:
+		motifCount = len(subset)
+		if (motifCount not in motifCountToSubsets):
+			motifCountToSubsets[motifCount] = [subset]
+		else:
+			motifCountToSubsets[motifCount] += [subset]
+
+	motifCounts = list(motifCountToSubsets)
+	motifCounts.sort()
+
+	isFirstGroup = True
+	for motifCount in motifCounts:
+		subsets = motifCountToSubsets[motifCount]
+		subsets.sort()
+		for subset in subsets:
+			for group in subsetToGroups[subset]:
+				if (isFirstGroup):
+					if (summaryHeaderLine != None):
+						print >>outF,summaryHeaderLine
+					isFirstGroup = False
+				else:
+					print >>outF  # (line to separate groups)
+
+				for summary in group:
+					print >>outF,summary.line
+
+	if (outF != stdout):
+		outF.close()
 
 
 # read_summary--
@@ -98,6 +205,8 @@ def main():
 class Summary: pass
 
 def read_summary(f,filename=None):
+	global summaryHeaderLine
+
 	if (filename == None): filename = "input"
 
 	lineNumber = 0
@@ -105,7 +214,9 @@ def read_summary(f,filename=None):
 		lineNumber += 1
 		line = line.strip()
 		if (line == ""): continue
-		if (line.startswith("#")): continue
+		if (line.startswith("#")):
+			if (summaryHeaderLine == None): summaryHeaderLine = line
+			continue
 
 		fields = line.split()
 		if (len(fields) != 13):
@@ -158,35 +269,35 @@ def read_summary(f,filename=None):
 		yield s
 
 
-# overlapping_clumps--
-#   Combine alignment summaries into overlapping clumps
+# overlapping_groups--
+#   Combine alignment summaries into overlapping groups
 
-def overlapping_clumps(summaries):
+def overlapping_groups(summaries):
 	summaries = [(summary.start,summary.end,summary) for summary in summaries]
 	summaries.sort()
 
-	clumps = []
+	groups = []
 
-	currentClump = None
+	currentGroup = None
 	start = end  = None
 	for (s,e,summary) in summaries:
 		if (start == None):
-			currentClump = [summary]
+			currentGroup = [summary]
 			(start,end) = (s,e)
 		elif (s >= end):
-			clumps += [currentClump]
-			currentClump = [summary]
+			groups += [currentGroup]
+			currentGroup = [summary]
 			(start,end) = (s,e)
 		elif (e <= end):
-			currentClump += [summary]
+			currentGroup += [summary]
 		else: # if (e > end):
-			currentClump += [summary]
+			currentGroup += [summary]
 			end = e
 
-	if (currentClump != None):
-		clumps += [currentClump]
+	if (currentGroup != None):
+		groups += [currentGroup]
 
-	return clumps
+	return groups
 
 
 if __name__ == "__main__": main()
