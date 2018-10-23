@@ -160,13 +160,21 @@ def main():
 
 	if (outTemplate == None):
 		outF = stdout
+		if (list(subsetToGroups) == []):
+			print >>stderr, "no alignments to write to console"
 	elif ("{motif}" not in outTemplate):
 		outF = file(outTemplate,"wt")
-		print >>stderr,"writing to \"%s\"" % outTemplate
+		if (list(subsetToGroups) == []):
+			print >>stderr, "no alignments to write to \"%s\"" % outTemplate
+		else:
+			print >>stderr,"writing to \"%s\"" % outTemplate
 	else:
 		outFilename = outTemplate.replace("{motif}","overlaps")
 		outF = file(outFilename,"wt")
-		print >>stderr,"writing to \"%s\"" % outFilename
+		if (list(subsetToGroups) == []):
+			print >>stderr, "no alignments to write to \"%s\"" % outFilename
+		else:
+			print >>stderr,"writing to \"%s\"" % outFilename
 
 	motifCountToSubsets = {}
 	for subset in subsetToGroups:
