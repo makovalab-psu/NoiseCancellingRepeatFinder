@@ -1,19 +1,21 @@
 # Noise Cancelling Repeat Finder &mdash; Mock Genomes
 
-Simulated pacbio and nanopore reads from fake genomes embedded with some tandem
-repeats.
+Simulated PacBio and Oxford Nanopore reads from fake genomes embedded with some
+tandem repeats.
 
 _For historical reasons, and to avoid having to change many development
-scripts, the only mock genomes is called "mock genome 3". No other mock genomes
+scripts, the only mock genome is called "mock genome 3". No other mock genomes
 are currently extant._
 
 
 # Mock Genome 3
 
 The genome is a mix of random sequence and tandem repeats. The primary repeat
-elements are have periods of 5, 10, 20, 40, 80, and 171 bp, shown below. GGAAT
-is a highly studied 5-mer, and the 171-mer is alpha satellite. The other four
-are randomly generated sequences.
+elements have periods of 5, 10, 20, 40, 80, and 171 bp, shown below. GGAAT is a
+highly studied 5-mer, and the 171-mer is alpha satellite. The other four are
+randomly generated sequences.
+
+These are the six primary repeat elements:
 
 ```bash  
 GGAAT
@@ -27,8 +29,8 @@ TCTGTCTAGTTTTTATATGAAGATATTCCCTTTTCCACCATAATCCTCAAAGCGCTCCAAATATCCACTTGCAGATTCTA
 A total of 2,000 repeats were generated, with lengths sampled from a normal
 distribution with mu=1000, sigma=400, but with minimum length 500. About half
 of the repeats were chosen from the six primary elements. The others were from
-elements with edit distance 1 from those; these elements are intended as false
-positive bait for processes searching for the primary elements.
+elements with edit distance 1 from those -- these elements are intended as
+false positive bait for processes searching for the primary elements.
 
 Repeats were positioned randomly across a single-sequence "genome", with a
 minimum separation of 500 bp between neighboring repeats. A repeat can begin
@@ -40,19 +42,24 @@ Total length of the genome is 3.3Mbp, of which 2.1Mbp is repeats.
 The genome is in genome3.fa. Positions of the embedded motifs, in the genome,
 are recorded in genome3.truth.dat.
 
-Fake reads were sampled from this genome, separately simulating pacbio and
-nanopore sequencing error profiles. The error profiles were derived from
-published alignments. For pacbio this was 1.7% mismatch rate, 8.9% single-base
-insertion, 4.3% single-base deletion. For nanopore, this was 7.4% mismatch
-rate, 2.0% single-base insertion, 10.2% single-base deletion.
+Fake reads were sampled from this genome, separately simulating PacBio and
+Oxford Nanopore sequencing error profiles. The error profiles were derived from
+published alignments (details are, or will be, in the manuscript). For PacBio
+this was 1.7% mismatch rate, 8.9% single-base insertion, 4.3% single-base
+deletion. For Oxford Nanopore, this was 4.6% mismatch rate, 3.8% single-base
+insertion, 7.7% single-base deletion.
 
 Overall coverage (of the genome) is intended to be about 5X. Read lengths were
 pulled from a distribution with min=1K, max=20K, and mu=7,333 (the p.d.f. drops
-linearly from a high at 1K to zero at 20K).
+linearly from a high at 1K to zero at 20K). This distribution was chosen as a
+crude match for commonality of observed length distributions in published reads
+for both PacBio and Oxford Nanopore -- though both technologies can produce
+reads up to ten times this length, such reads are a very small part of the
+observed distributions.
 
-The reads are in genome3.pacbio.fa and genome3.nanopore.fa. The true alignments
-of the reads (to the genome) are recorded in genome3.pacbio.cigars and
-genome3.nanopore.cigars.
+The simulated reads are in genome3.pacbio.fa and genome3.nanopore.fa. True
+alignments of the reads, to the genome, are recorded in genome3.pacbio.cigars
+and genome3.nanopore.cigars.
 
 True alignments of the embedded motif intervals on the reads are recorded in
 genome3.pacbio.truth.ncrf and genome3.nanopore.truth.ncrf. Note that while
@@ -63,9 +70,9 @@ the simulation process.
 # Truth File Formats
 
 When a mock genome is generated, the positions of the embedded repeat arrays
-*in the genome* are recorded in genome_name.truth.dat.  This is a
+*in the genome* are recorded in genome_name.truth.dat. This is a
 whitespace-delimited text file with seven columns. The first line is a header
-line, beginning with a # and providing the names of the columns.
+line, beginning with a waffle (#) and providing the names of the columns.
 
 The columns are
 ```bash  
@@ -92,13 +99,15 @@ with seven columns. There is no header line.
 
 The columns are
 ```bash  
-chrom,gStart,gEnd  The interval *on the genome* containing the portion of the
+chrom,gStart,gEnd  The interval ON THE GENOME containing the portion of the
                    repeat array that was sampled by this read. Start and end
                    are origin-zero, half open.
-read,rStart,rEnd   The interval *on the read* corresponding to the interval on
+read,rStart,rEnd   The interval ON THE READ corresponding to the interval on
                    the genome. This will usually have a different length than
                    the interval on the genome, because of simulated sequencing
                    noise.
 motif              The repeated motif. This has an optional suffix describing
-                   the orientation of the motif *on the read*.
+                   the orientation of the motif ON THE READ. For example,
+                   "GGAAT-" indicates the array is on what would be the read's
+                   reverse strand.
 ```  
