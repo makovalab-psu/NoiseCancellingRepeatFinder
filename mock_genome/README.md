@@ -5,11 +5,11 @@ repeats.
 
 # Mock Genome 1
 
-(to be described later)
+(no longer exists)
 
 # Mock Genome 2
 
-(to be described later)
+(no longer exists)
 
 # Mock Genome 3
 
@@ -65,27 +65,7 @@ the simulation process.
 
 # Mock Genome 4
 
-The genome is similar in concept to mock genome 3. The difference is that
-the repeat lengths are longer for longer motifs (in mock genome 3 the repeat
-length distribution was the same, regardless of motif length). The intent is
-that the distribution of copy numbers will be consistent regardless of motif
-length.
-
-The distribution of repeat lengths for the 5-mer is the same as in mock genome
-3. The distributions for the other motifs are shown in this table.s
-```bash  
-5-mer    mu=1000   sigma=400   minLen=500
-10-mer   mu=2000   sigma=800   minLen=1000
-20-mer   mu=4000   sigma=1600  minLen=2000
-40-mer   mu=8000   sigma=3200  minLen=4000
-80-mer   mu=16000  sigma=6400  minLen=8000
-171-mer  mu=34200  sigma=13680 minLen=17100
-```  
-
-The repeats are, on average, much longer; therefor the genome is much longer.
-The coverage and read length distribution were kept the same, thus the number
-of reads is much larger. Because of this increase in file size, all the files
-are included in gzipped form.
+(no longer exists)
 
 # Truth File Formats
 
@@ -112,10 +92,10 @@ fill             The length of random sequence inserted between this repeat
                  array and the closest one that precedes it.
 ```  
 
-When simulated reads are pulled from a mock genome is generated, the positions
-of the embedded repeat arrays *in the reads* are recorded in
-genome_name.technology_name.truth.dat. This is a whitespace-delimited text
-file with seven columns. There is no header line.
+When simulated reads are pulled from a mock genome, the positions of the
+embedded repeat arrays *in the reads* are recorded in
+genome_name.technology_name.truth.dat. This is a whitespace-delimited text file
+with seven columns. There is no header line.
 
 The columns are
 ```bash  
