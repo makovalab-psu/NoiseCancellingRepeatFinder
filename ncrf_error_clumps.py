@@ -10,7 +10,7 @@ from ncrf_parse import alignments,parse_noise_rate,int_with_unit
 
 def usage(s=None):
 	message = """
-usage: ncrf_cat <output_from_NCRF> | ncrf_error_clumps [options]
+usage: cat <output_from_NCRF> | ncrf_error_clumps [options]
   --maxmratio=<ratio>     identify clumps with no more matches than given ratio; 
                           ratio can be between 0 and 1 (e.g. "0.85"), or can be
                           expressed as a percentage (e.g. "85%")

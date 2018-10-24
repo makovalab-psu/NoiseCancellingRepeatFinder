@@ -10,7 +10,7 @@ from ncrf_parse import alignments
 
 def usage(s=None):
 	message = """
-usage: ncrf_cat <output_from_NCRF> | ncrf_sort [options]
+usage: cat <output_from_NCRF> | ncrf_sort [options]
    --sortby=mratio[-|+]    sort by decreasing or increasing match ratio
                            (by default we sort by decreasing match ratio)
    --sortby=score[-|+]     sort by decreasing or increasing alignment score
