@@ -76,38 +76,87 @@ line, beginning with a waffle (#) and providing the names of the columns.
 
 The columns are
 ```bash  
-chrom,start,end  The interval containing the repeat array. Chrom is usually
-                 the name of the genome. Start and end are origin-zero, half
-                 open.
-motif            The repeated motif. This has an optional suffix describing
-                 the offset and orientation of the motif. For example,
-                 "GGAAT.2+" indicates the array begins with the 3rd character
-                 (the first A) and is on the forward strand.
-rptLen           The number of bases in the repeat array.
-len              The length of the interval containing the array (the same as
-                 end-start). This will usually be identical to rptLen, but
-                 allows for the possibility that some noise process has changed
-                 the length of the array before it was embedded in the genome.
-fill             The length of random sequence inserted between this repeat
-                 array and the closest one that precedes it.
+chrom,start,end    The interval containing the repeat array. Chrom is usually
+                   the name of the genome. Start and end are origin-zero, half
+                   open.
+motif              The repeated motif. This has an optional suffix describing
+                   the offset and orientation of the motif. For example,
+                   "GGAAT.2+" indicates the array begins with the 3rd character
+                   (the first A) and is on the forward strand.
+rptLen             The number of bases in the repeat array.
+len                The length of the interval containing the array (the same as
+                   end-start). This will usually be identical to rptLen, but
+                   allows for the possibility that some noise process has
+                   changed the length of the array before it was embedded in
+                   the genome.
+fill               The length of random sequence inserted between this repeat
+                   array and the closest one that precedes it.
 ```  
 
-When simulated reads are pulled from a mock genome, the positions of the
-embedded repeat arrays *in the reads* are recorded in
-genome_name.technology_name.truth.dat. This is a whitespace-delimited text file
-with seven columns. There is no header line.
+When simulated reads are pulled from a mock genome, the true alignments of the
+reads to the genome are recorded in genome_name.technology_name.cigars. This
+information is then used to recover the true alignments of the embedded repeat
+arrays *in the reads* (as discussed below). This is a whitespace-delimited text
+file with five columns. There is no header line.
 
 The columns are
 ```bash  
-chrom,gStart,gEnd  The interval ON THE GENOME containing the portion of the
-                   repeat array that was sampled by this read. Start and end
-                   are origin-zero, half open.
-read,rStart,rEnd   The interval ON THE READ corresponding to the interval on
-                   the genome. This will usually have a different length than
-                   the interval on the genome, because of simulated sequencing
-                   noise.
-motif              The repeated motif. This has an optional suffix describing
-                   the orientation of the motif ON THE READ. For example,
-                   "GGAAT-" indicates the array is on what would be the read's
-                   reverse strand.
+read               The name of the read.
+chrom,gStart,gEnd  The interval ON THE GENOME from which the read was sampled.
+                   This has an optional suffix describing the orientation of
+                   the read relative to the genome. For example, "genome3-"
+                   indicates the read was sampled from what would be the
+                   genome's reverse strand. gStart and gEnd are origin-zero,
+                   half open.
+cigar              Cigar string describing the alignment. "M" indicates base(s)
+                   in the read matching the genome, or mismatching (a
+                   substitution). "I" indicates base(s) in the read which are
+                   not in the genome. "D" indicates base(s) in the genome which
+                   are not in the read.
+```  
+
+The true alignments of the embedded repeat arrays *in the reads* are recorded
+in genome_name.technology_name.truth.ncrf. This is similar to the alignment
+format produced by NCRF (described in the main README), with two fields
+repurposed. First, where the motif and strand would normally be indicated,
+.truth.ncrf files provide the aligned interval and orientation on the genome.
+Second, the score field has no meaning in .truth.ncrf files.
+
+Alignments are separated from each other by blank lines. A typical alignment
+block is shown below. Note that there may be other lines in a block, each
+starting with a waffle (#).
+```bash  
+# score=1 querybp=623 mRatio=84.5% m=541 mm=35 i=17 d=47 =======x=x=xx==x====...
+genome3_NANOPOREV2_F_56232_64720 8188  593bp   5965-6558 GAATGGAAACTC-AA-GGAA...
+genome3:62391-63014+                   623bp   score=1   GAATGGA-A-TgGAATGGAA...
+```  
+
+The true positions of the embedded repeat arrays *in the reads* are recorded in
+genome_name.technology_name.truth.summary. This is nearly identical to the
+alignment summary format produced by ncrf_summary, but column 1 is completely
+different and the meaning of some of the other columns is also different. This
+is a whitespace-delimited text file with thirteen columns. The first line is a
+header line, beginning with a waffle (#) and providing the names of the columns.
+
+The columns are
+```bash  
+genome             The aligned interval ON THE GENOME containing the portion of
+                   the repeat array. This is of the form chrom:gStart-gEnd. For
+                   example, "genome3:62391-63014" indicates an interval of 623
+                   bp on genome 3. gStart and gEnd are origin-zero, half open.
+motif              The embedded repeat.
+seq,start,end      The aligned interval ON THE READ (seq is the read name).
+strand             "+" indicates the aligned intervals are in the same
+                   orientation; "-" indicates they are in opposing orientations.
+seqLen             The length of the read (the entire read, not just the
+                   aligned interval).
+querybp            The number of bases in the aligned repeat. This should be
+                   the same as gEnd-gStart.
+mRatio             The ratio of matches to alignment events, as a percentage.
+m                  The number of matched bases in the alignment.
+mm                 The number of mismatched bases in the alignment.
+i                  The number of inserted bases in the alignment -- bases in
+                   the read which are not in the genome.
+d                  The number of deleted bases in the alignment -- bases in
+                   the genome which are not in the read.
 ```  
