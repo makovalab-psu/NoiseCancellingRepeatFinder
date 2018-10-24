@@ -10,7 +10,7 @@ from ncrf_parse import alignments,int_with_unit
 
 def usage(s=None):
 	message = """
-usage: cat <output_from_NCRF> | ncrf_extract_mx_matrix [options]
+usage: ncrf_cat <output_from_NCRF> | ncrf_extract_mx_matrix [options]
   --head=<number>         limit the number of input alignments
 
 The output matrix has R rows and 2M+1 columns, where R is the number of input

@@ -52,7 +52,7 @@ defaultPrngSeed = "NCRF.error_uniformity_filter"  # (for backward compatibility)
 
 def usage(s=None):
 	message = """
-usage: cat <output_from_NCRF> | error_nonuniformity_filter [options]
+usage: ncrf_cat <output_from_NCRF> | error_nonuniformity_filter [options]
   --method=min-max      judge alignments by a "min-max" test  
                         (this is the default)
   --trials=<number>     number of trials for the min-max test
@@ -80,10 +80,6 @@ usage: cat <output_from_NCRF> | error_nonuniformity_filter [options]
                         <n>
   --head=<number>       limit the number of input alignments
   --progress=<number>   periodically report how many alignments we've tested
-  --batch=<number>      number of input alignments processed by each call to R;
-                        our ability to call R fails if the command line we pass
-                        it is too long
-                        (default is 30)
 
 In a "true" alignment to a given motif unit, we expect the errors to be
 distributed randomly and uniformly among the positions in the unit. (That is
@@ -194,7 +190,7 @@ def main():
 				usage("bad subsample description in %s" % arg)
 		elif (arg.startswith("--progress=")):
 			reportProgress = int_with_unit(argVal)
-		elif (arg.startswith("--batch=")):
+		elif (arg.startswith("--batch=")):     # (no longer advertised, since it only applies to R)
 			batchSize = int(argVal)
 		elif (arg == "--report:matrix") or (arg == "--report=matrix"):   # (unadvertised)
 			reportAs = "matrix"

@@ -11,7 +11,7 @@ from ncrf_parse  import alignments,reverse_complement,int_with_unit,float_or_fra
 
 def usage(s=None):
 	message = """
-usage: cat <output_from_NCRF> | ncrf_words [options]
+usage: ncrf_cat <output_from_NCRF> | ncrf_words [options]
   --minwordratio=<r>  only show words that have counts that are at least r
                       times the motif word's count (e.g. r=0.5 would show the
                       words that occur at least half as often as the motif)
