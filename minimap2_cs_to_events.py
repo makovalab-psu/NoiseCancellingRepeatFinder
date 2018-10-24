@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Convert the cs tag in minimap2 output to ncrf-style event counts .
+Convert the cs tag in minimap2 output to ncrf-style event counts.
 """
 
 from sys import argv,stdin,stdout,stderr,exit

@@ -688,8 +688,86 @@ one without, the same pre-error sequence is generated.  Having the output of
 both those runs can be useful.
 ```
 
-¥¥¥ reconstruct_simulated_alignments
-¥¥¥ map_onto_simulated_reads
+reconstruct_simulated_alignments-- Reconstruct alignments between a genome and
+simulated reads sampled from the genome.
+
+```bash  
+reconstruct_simulated_alignments [options]
+  --genome=<filename>      (mandatory) genome file, fasta or gzipped fasta (an
+                           input file)
+  --reads=<filename>       (mandatory) genome file, fasta or gzipped fasta (an
+                           input file)
+  --cigars=<filename>      (mandatory) cigar strings file corresponding to the
+                           reads (an input file); this may contain cigars for
+                           reads not present in the reads file (they are
+                           ignored)
+  --intervals=<filename>   If this is provided, alignments are truncated to
+                           these intervals in the genome (format described
+                           below)
+  --catalog=<filename>     If this is provided, alignments are truncated to the
+						   repeat intervals given by the file, and positional
+						   match/mismatch/insert/delete counts are produced. 
+						   The format of the input file is the same as produced
+						   by mock_motif_genome's --catalog option; positional
+						   counts are the same as would be produced by NCRF's
+						   --positionalevents option
+  --motif=<motif>          (cumulative) motifs of interest; alignments for other
+                           motifs are discarded; requires --catalog, and the
+                           motif must appear in the same orientation listed in
+                           the catalog
+                           (if this is not provided, we keep all alignments)
+  --chromosome[s]=<names>  (cumulative) only reconstruct alignments on the
+                           specified "chromosomes";  <names> is a comma-
+                           separated list of sequence names in the genome
+                           (default is to report intervals on all chromosomes)
+  --minlength=<bp>         discard alignments that aren't long enough on the;
+                           genome
+                           (but default, we don't filter by length)
+  --progress=<number>      periodically report how many reads we've processed
+
+Given a genome and simulated reads sampled by simulate_reads_v4, and the
+corresponding cigars file, alignments are reconstructed. Note that this is
+*not* an aliger; it is just reconstructing the alignment truth that the
+simulate_reads_v4 created.
+
+Note that by default we store the entire genome in memory. If the genome is
+large, this could create memory issues. The --chromosomes option can be used to
+process alignments on different chromosomes. Also, chromosomes not appearing in
+the intervals file (if on is provided) are not stored.
+
+Intervals, if provided, are one per line, <chrom> start> <end>, origin-zero
+half-open. Any additional columns are ignored.
+
+Alignment output is in a format compatible with that produced by NCRF.
+```
+
+map_onto_simulated_reads-- Map intervals from a "genome" to positions on
+simulated reads.
+
+```bash  
+cat <intervals_file> | map_onto_simulated_reads [options]
+  --cigars=<filename>    (mandatory) cigar strings file (an input file)
+  --stranded=<columns>   (cumulative) input columns which are presumed to have
+                         strand info (+ or -) as their final character;
+                         <columns> is a comma-separated list
+  --truncate             truncate mappings at the end of reads; actaully
+                         mappings are always truncated, but by default when
+                         this happens it is indicated as "<0" or ">1000"
+                         (assuming the read length is 1000); this option
+                         just removes the "<" and ">" indicators.
+  --sortby:reads         sort output by read positions on the genome
+                         (by default, output is interval-by-interval in the
+                         order intervals are read)
+  --separators           print separating lines between different intervals
+                         or reads
+
+Given a genome from which simulated reads were sampled by simulate_reads_v4,
+and the corresponding cigars file, map intervals (or positions) from the genome
+to the corresponding positions on the simulated reads. 
+
+Intervals are one per line, <chrom> start> <end>, origin-zero half-open. Any
+additional columns are copied to the output.
+```
 
 #### Scripts to evaluate classifier performance
 
@@ -756,26 +834,38 @@ motif are used here ("readName", "start", "end", and "motif", columns 4, 5, 6,
 and 7). Intervals must be distinct; overlaps are not allowed.
 ```
 
-¥¥¥ minimap2_cs_to_events
-¥¥¥ harvest_trf_html
+harvest_trf_html-- Convert alignments from TRF (Tandem Repeat Finder) html
+output to a tabular text format similar to an NcRF summary.
+
+```bash  
+cat <trf_html_output> | harvest_trf_html [options]
+  --motif=<motif>        (cumulative) motifs of interest; alignments for other
+                         motifs are discarded
+                         (if this is not provided, we keep all alignments)
+  --minlength=<bp>       discard alignments that don't have long enough repeat
+                         (but default, we don't filter by length)
+  --withheader           include a header line in the output
+  --withalignment        include alignment text in the output
+```
+
+minimap2_cs_to_events-- Convert the cs tag in minimap2 output to ncrf-style
+event counts.
+
+```bash  
+cat <output_from_minimap2> | minimap2_cs_to_events [options]
+  --minquality=<qual>  discard low quality alignments
+  --withheader         include a header line in the output
+  --remove:cs          remove the cs tag
+  --remove:tags        remove all tags
+
+The minimap2 output should include the cs tag, i.e. minimap2 should have been
+run with the "--cs=short" option.
+```
 
 #### Other scripts
 
 ncrf_parse, echydna, interval_dict-- _These support the other scripts and
 should not be used directly_.
-
-¥¥¥¥¥¥¥¥¥¥¥¥¥¥¥¥
-
-
-
-
-
-
-
-
-
-
-
 
 ### R plotting functions 
 
