@@ -92,10 +92,10 @@ plot_ncrf_event_matrix <- function(name,filename,motif=NULL,
 # plot_ncrf_filter_results--
 #   Plot, one dot per alignment, accepted/rejected filtering results.
 #
-# The input file is the output of "ncrf_positional_filter --report:matrix".
+# The input file is the output of "error_nonuniformity_filter --report:matrix".
 # It has NO header line and one row for each alignment;  2M+2 columns per row,
 # where M is the motif length.  Column 1 is the line number of the alignment
-# (in the input to ncrf_positional_filter).  Column 2 is the outcome of the
+# (in the input to error_nonuniformity_filter).  Column 2 is the outcome of the
 # test.  Columns 3 thru M+2 are positional match counts for that alignment,
 # and columns M+3 thru 2M+2 are the positional error counts.  We assume all
 # rows have the same number of columns, i.e. that the same motif length is
