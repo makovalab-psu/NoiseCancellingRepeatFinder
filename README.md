@@ -348,9 +348,9 @@ columns, first three of which are ignored here. The remaining columns are,
 respectively, counts for matches ("m"), mismatches ("mm"), insertion opens
 ("io"), insertion extensions ("ix"), deletion opens ("do"), and deletion
 extensions ("dx").
+```
 
 #### Scripts to sample common read length distributions
-```
 
 fasta_length_distribution-- Read a fasta file and report the distribution of
 sequence lengths.
