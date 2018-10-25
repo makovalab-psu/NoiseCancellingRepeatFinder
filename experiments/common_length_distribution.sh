@@ -17,8 +17,8 @@
 # count in both sets, so the common distribution would contain a non-zero count
 # for that bin.
 #
-# We use a logarithm binning formula so longer lengths have much wider bins. At
-# length 400 the bin size is 5, while at length 300K bin it's about 10K.
+# We use a logarithmic binning formula so longer lengths have much wider bins.
+# At length 400 the bin size is 5, while at length 300K bin it's about 10K.
 #
 # Note that we do not modify sequences. It's possible to achieve distribution
 # similarity by truncating some sequences, but we do not do that.
@@ -34,13 +34,13 @@ fasta_match_length_distribution="../fasta_match_length_distribution.py"
 # settings
 
 minReadLen=375
-toBin="30.5*log(pos-250)"          # maps a length to its bin
-fromBin="250+exp(bin/30.5)"        # maps a bin to its length(s)
+toBin="30.5*log(pos-250)"          # expression to map a length to its bin
+fromBin="250+exp(bin/30.5)"        # expression to map a bin to its length(s)
 
-fastaSet1="SRR2036701 SRR2036850"  # we have, e.g. SRR2036701.fa.gz
-fastaSet2="FAF01127 FAF01169"
+fastaSet1="SRR2036701 SRR2036850"  # for each name in these two lists, we have,
+fastaSet2="FAF01127 FAF01169"      # .. name.fa.gz; e.g. SRR2036701.fa.gz
 
-# compute the sequence length distributions
+#=== compute the sequence length distributions
 
 echo "${fastaSet1} ${fastaSet2}" | tr " " "\n" \
   | while read f ; do
@@ -78,8 +78,8 @@ echo "${fastaSet1} ${fastaSet2}" | tr " " "\n" \
       rm ${f}.length_distrib.dat
       done
 
-# compute the minimum common distribution, reduced by 10%, and apply it to
-# each set
+#=== compute the minimum common distribution, reduced by 10%, and apply it to
+#=== each set
 
 echo "computing common distribution"
 ${common_length_distribution} --scale=90% \
@@ -136,7 +136,7 @@ echo "${fastaSet1} ${fastaSet2}" | tr " " "\n" \
 
 # at this point we have f.distribution_spec for each f.fa.gz
 
-# sample reads for each set
+#=== sample reads for each set
 
 echo "sampling reads for fastaSet1"
 echo ${fastaSet1} | tr " " "\n" \
@@ -158,7 +158,7 @@ echo ${fastaSet2} | tr " " "\n" \
   | gzip \
   > fastaSet2.selected.fa.gz
 
-# compute sampled distribution of each set, for a sanity check
+#== compute sampled distribution of each set, for a sanity check
 
 echo "computing length distribution for sampled fastaSet1"
 gzip -dc fastaSet1.selected.fa.gz \
