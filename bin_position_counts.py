@@ -32,7 +32,7 @@ position.  For example, this set of position,count pairs
    378 26    384 23    390 27    396 22    402 24
    379 21    385 14    391 30    397 20    403 28
    380 21    386 19    392 21    398 25    404 30
-woould be represented in 30 lines in the file:
+would be represented in 30 lines in the file:
    375 15
     ...
    404 30

@@ -12,7 +12,7 @@ from ncrf_parse import alignments,int_with_unit
 
 def usage(s=None):
 	message = """
-usage: cat <output_from_NCRF> | ncrf_extract_event_matrix [options]
+usage: ncrf_cat <output_from_NCRF> | ncrf_extract_event_matrix [options]
   --withheader            include a header line in the output
   --sumonly               include only a summation line in the output
                           (by default, we output a separate line for each

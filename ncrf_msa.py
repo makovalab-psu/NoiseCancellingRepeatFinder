@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Create an msa (multiple sequence alignmnet) of each word aligned to the motif,
+Create an msa (multiple sequence alignmnent) of each word aligned to the motif,
 in the output of Noise Cancelling Repeat Finder.
 """
 
@@ -10,7 +10,7 @@ from ncrf_parse import alignments,reverse_complement,int_with_unit
 
 def usage(s=None):
 	message = """
-usage: cat <output_from_NCRF> | ncrf_msa [options]
+usage: ncrf_cat <output_from_NCRF> | ncrf_msa [options]
   --head=<number>     limit the number of input alignments"""
 
 	if (s == None): exit (message)
