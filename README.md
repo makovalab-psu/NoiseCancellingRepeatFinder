@@ -735,8 +735,8 @@ large, this could create memory issues. The --chromosomes option can be used to
 process alignments on different chromosomes. Also, chromosomes not appearing in
 the intervals file (if on is provided) are not stored.
 
-Intervals, if provided, are one per line, <chrom> start> <end>, origin-zero
-half-open. Any additional columns are ignored.
+Intervals, if provided, are one per line, <chrom> start> <end>. Coordinates are
+zero-based and exclude the end position. Any additional columns are ignored.
 
 Alignment output is in a format compatible with that produced by NCRF.
 ```
@@ -765,8 +765,9 @@ Given a genome from which simulated reads were sampled by simulate_reads_v4,
 and the corresponding cigars file, map intervals (or positions) from the genome
 to the corresponding positions on the simulated reads. 
 
-Intervals are one per line, <chrom> start> <end>, origin-zero half-open. Any
-additional columns are copied to the output.
+Intervals are one per line, <chrom> start> <end>. Coordinates are zero-based
+and exclude the end position. Any additional columns are copied to the
+output."""
 ```
 
 #### Scripts to evaluate classifier performance

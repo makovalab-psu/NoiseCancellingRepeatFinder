@@ -29,8 +29,9 @@ Given a genome from which simulated reads were sampled by simulate_reads_v4,
 and the corresponding cigars file, map intervals (or positions) from the genome
 to the corresponding positions on the simulated reads. 
 
-Intervals are one per line, <chrom> start> <end>, origin-zero half-open. Any
-additional columns are copied to the output."""
+Intervals are one per line, <chrom> start> <end>. Coordinates are zero-based
+and exclude the end position. Any additional columns are copied to the
+output."""
 
 	if (s == None): exit (message)
 	else:           exit ("%s\n%s" % (s,message))

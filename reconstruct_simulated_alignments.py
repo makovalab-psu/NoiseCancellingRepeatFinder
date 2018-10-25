@@ -57,8 +57,8 @@ large, this could create memory issues. The --chromosomes option can be used to
 process alignments on different chromosomes. Also, chromosomes not appearing in
 the intervals file (if on is provided) are not stored.
 
-Intervals, if provided, are one per line, <chrom> start> <end>, origin-zero
-half-open. Any additional columns are ignored.
+Intervals, if provided, are one per line, <chrom> start> <end>. Coordinates are
+zero-based and exclude the end position. Any additional columns are ignored.
 
 Alignment output is in a format compatible with that produced by NCRF."""
 
