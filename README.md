@@ -23,6 +23,8 @@ To install Noise Cancelling Repeat Finder using the source:
     cd NoiseCancellingRepeatFinder  
     make  
 ```
+3. You may wish to add the path to your copy of the NoiseCancellingRepeatFinder
+directory to your PATH variable.
 
 ### Prerequisites
 
