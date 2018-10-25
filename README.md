@@ -705,12 +705,12 @@ reconstruct_simulated_alignments [options]
                            these intervals in the genome (format described
                            below)
   --catalog=<filename>     If this is provided, alignments are truncated to the
-						   repeat intervals given by the file, and positional
-						   match/mismatch/insert/delete counts are produced. 
-						   The format of the input file is the same as produced
-						   by mock_motif_genome's --catalog option; positional
-						   counts are the same as would be produced by NCRF's
-						   --positionalevents option
+                           repeat intervals given by the file, and positional
+                           match/mismatch/insert/delete counts are produced. 
+                           The format of the input file is the same as produced
+                           by mock_motif_genome's --catalog option; positional
+                           counts are the same as would be produced by NCRF's
+                           --positionalevents option
   --motif=<motif>          (cumulative) motifs of interest; alignments for other
                            motifs are discarded; requires --catalog, and the
                            motif must appear in the same orientation listed in
