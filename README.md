@@ -2,7 +2,7 @@
 
 This package finds alignments of short tandem repeats in noisy DNA sequencing
 data.  Given a list of known motifs (e.g. "GGCAT", "CCAT", etc.) and DNA
-sequences in fasta files (e.g. PacBio or Oxfor Nanopore sequenced reads), it
+sequences in fasta files (e.g. PacBio or Oxford Nanopore sequenced reads), it
 attempts to align segments of the DNA sequences to repeated copies of the
 motifs.
 
