@@ -118,7 +118,7 @@ cigar              Cigar string describing the alignment. "M" indicates base(s)
 
 The true alignments of the embedded repeat arrays *in the reads* are recorded
 in genome_name.technology_name.truth.ncrf. This is similar to the alignment
-format produced by NCRF (described in the main README), with two fields
+format produced by NCRF (described in the tutorial README), with two fields
 repurposed. First, where the motif and strand would normally be indicated,
 .truth.ncrf files provide the aligned interval and orientation on the genome.
 Second, the score field has no meaning in .truth.ncrf files.
