@@ -1,10 +1,11 @@
 ### Brief Tutorial, Finding Repeats in Noisy Sequence Data
 
 This directory contains a toy example in a small fasta file, example.fa, and
-expected results files, expected.unfiltered.ncrf and expected.filtered.ncrf.
+expected results files -- expected.unfiltered.ncrf, expected.filtered.ncrf, and
+expected.summary.
 
-(1) Run Noise Cancelling Repeat Finder to align the sequence to repeat motifs,
-without attempting to filter out clumps of alignment errors.
+####(1) Run Noise Cancelling Repeat Finder to align the sequence to repeats of the
+motif GGAAT.####
 
 ```bash 
     cat example.fa \
@@ -40,7 +41,7 @@ below), the number of matched bases ("m"), mismatched bases ("mm"), bases
 inserted into the repeated motif ("i"), and bases deleted from the repeated
 motif ("d"). The last part of the line shows where there are errors in the
 alignment (mismatches or indels), an "=" indicating a match and an "x"
-indicating an error. In the example, we have an alignment of a 771 bp query
+indicating an indel. In the example, we have an alignment of a 771 bp query
 (the repeated motif) with 9 mismatches, 40 insertions and 18 deletions. Note
 that the actual line is much longer than shown here (the same is true for the
 second and third lines).
@@ -53,9 +54,9 @@ motif, and deletions are bases in the repeated motif but not in the sequence.
 The second line shows the name of the aligned sequence, its full length, the
 length of the aligned segment, the coordinates of the aligned segment, and the
 segment's nucleotides. Any deletions are shown as dashes. In this example we
-aligned a 793 bp segment of the 50,000 bp sequence, from position 31854 up to,
-but not including, position 32647. Note that the coordinates are zero-based and
-exclude the end position.
+aligned a 793 bp segment of the 50,000 bp sequence, from position 31,854 up to,
+but not including, position 32,647. Note that the coordinates are zero-based
+and exclude the end position.
 
 The third line shows the repeat motif, the orientation in which it was aligned
 (+ or -), the length of the aligned repeat sequence (same as "querybp" as from
@@ -76,16 +77,18 @@ the first line. mmA, mmC, mmG, and mmT are mismatch counts for each substituted
 nucleotide. x is the sum of mm, i, and d. In the example above we see the
 errors are a little less prevalent in position 0 (lower mRatio, higher x),
 which might suggest that another motif is be a better match for this query
-segment (or for parts of it).
+segment (or for parts of it). Reporting of these statistics can be disabled by
+removing "--positionalevents" from the NCRF command line. 
 
 Following the positional alignment stats is a line showing counts of the query
 "words" the motif was aligned to. In this example, the motif was aligned to
 GGAAT 95 times, GAAT 9 times, and several other words a few times each. This
 suggests that our motif, GGAAT, is the correct motif for this segment. If we
 had a count for some other motif nearly as high as for GGAAT, that would
-suggest GGAAT wasn't a good match.
+suggest GGAAT wasn't a good match. Reporting of these counts can be disabled by
+removing ncrf_words from the command pipeline.
 
-(2) False alignments to similar motifs.
+####(2) False alignments to similar motifs.####
 
 One of the difficulties that arises, because we allow so much noise in the
 alignments, is a motif will align to segments that are better matches for
@@ -111,7 +114,7 @@ of deletions were observed. Second, our motif is aligned to GGAT (58) as often
 as to GGAAT (51). In fact, this segment probably contains a mix of those two
 motifs.
 
-(3) Filtering for error uniformity.
+####(3) Filtering for error uniformity.####
 
 Error_non_uniformity_filter.py is a post processor that automatically discards
 alignments like the one in the previous example. It performs a statistical
@@ -135,7 +138,7 @@ non-uniformity filter.
 The output file should match expected.filtered.ncrf. Comparing to the earlier
 unfiltered output, the suspect alignment is not included in the filtered output.
 
-(4) Alignment summary.
+####(4) Alignment summary.####
 
 Pass the output through ncrf_summary to get a tabular listing of the aligned
 segments.
