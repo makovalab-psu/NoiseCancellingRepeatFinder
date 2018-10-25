@@ -1,7 +1,24 @@
 #!/usr/bin/env bash
+# Collect classifier results, for a set of NCRF alignment scoring sets, into a
+# single table.
+#
+# The classifier results were computed by evaluate_scoring_sets.
+#
+# Reads:
+#   ${seed}.${scoring}.unfiltered.ncrf
+#   ${seed}.${scoring}.unfiltered.summary
+#   ${seed}.${scoring}.unfiltered.rates.dat
+#   ${seed}.${scoring}.classifier.dat
+#
+# Writes:
+#   ${seed}.iter${iterationNum}.classifier.dat
+
+# settings
 
 seed=$1
 iterationNum=$2
+
+#=== collect classifier results for each scoring set
 
 scoresHeader=`cat ${seed}.iter${iterationNum}.scoring_sets \
                 | head -n 1 \

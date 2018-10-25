@@ -22,15 +22,7 @@
 #
 # Note that we do not modify sequences. It's possible to achieve distribution
 # similarity by truncating some sequences, but we do not do that.
-
-# programs used
-
-fasta_length_distribution="      ../fasta_length_distribution.py"
-bin_position_counts="            ../bin_position_counts.py"
-common_length_distribution="     ../common_length_distribution.py"
-make_length_distribution_spec="  ../make_length_distribution_spec.py"
-fasta_match_length_distribution="../fasta_match_length_distribution.py"
-      
+     
 # settings
 
 minReadLen=375
@@ -39,6 +31,14 @@ fromBin="250+exp(bin/30.5)"        # expression to map a bin to its length(s)
 
 fastaSet1="SRR2036701 SRR2036850"  # for each name in these two lists, we have,
 fastaSet2="FAF01127 FAF01169"      # .. name.fa.gz; e.g. SRR2036701.fa.gz
+
+# programs used
+
+fasta_length_distribution="      ../fasta_length_distribution.py"
+bin_position_counts="            ../bin_position_counts.py"
+common_length_distribution="     ../common_length_distribution.py"
+make_length_distribution_spec="  ../make_length_distribution_spec.py"
+fasta_match_length_distribution="../fasta_match_length_distribution.py"
 
 #=== compute the sequence length distributions
 

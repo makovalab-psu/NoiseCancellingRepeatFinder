@@ -1,6 +1,22 @@
 #!/usr/bin/env bash
+# Evaluate a set of NCRF alignment scoring sets, based on its ability (as a
+# classifier) to discover repeats known to be embedded in a simulated read.
+#
+# Reads:
+#   ${seed}.iter${iterationNum}.scoring_sets
+#   ${seed}.noisy.fa.gz
+#   ${seed}.noisy.truth.dat
+#
+# Writes:
+#   ${seed}.${scoring}.unfiltered.ncrf
+#   ${seed}.${scoring}.unfiltered.summary
+#   ${seed}.${scoring}.unfiltered.rates.dat
+#   ${seed}.${scoring}.classifier.dat
+#   where ${scoring} is any line from the scoring_sets file
 
 ncrfDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
+
+# settings
 
 seed=$1
 iterationNum=$2
@@ -8,9 +24,9 @@ motif=$3
 minAlignmentLength=$4
 maxAlignmentNoise=$5
 
-source ${ncrf_dev}/ncrf_aware.sh
-
 numScoringSets=`wc -l ${seed}.iter${iterationNum}.scoring_sets | awk '{ print $1 }'`
+
+#=== evaluate each scoring set for its performance on the simulated read
 
 num=0
 time cat ${seed}.iter${iterationNum}.scoring_sets \

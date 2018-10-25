@@ -14,12 +14,12 @@ class CatalogEntry: pass
 
 # error profiles
 #
-# pacbio   mm=1.30% i=6.37% d=3.62% is from Guiblet et al (submitted)
-# pacbio   mm=1.7%  i=8.9%  d=4.3%  is derived from GIAB HG002 blasr alignments
-# pacbio   mm=1%    i=12%   d=2%    is from readsim-1.6 (ref [1] below)
-# nanopore mm=4.60% i=3.78% d=7.73% is derived from GIAB HG002 minimap2 alignments
-# nanopore mm=7.4%  i=2%    d=10.2% is derived from data from Jain et al (ref [2] below)
-# nanopore mm=3%    i=3%    d=3%    is from readsim-1.6 (ref [1] below)
+# pacbio   (v3) mm=1.30% i=6.37% d=3.62% is from Guiblet et al (submitted)
+# pacbio   (v1) mm=1.7%  i=8.9%  d=4.3%  is derived from GIAB HG002 blasr alignments
+# pacbio        mm=1%    i=12%   d=2%    is from readsim-1.6 (ref [1] below)
+# nanopore (v3) mm=4.60% i=3.78% d=7.73% is derived from GIAB HG002 minimap2 alignments
+# nanopore (v1) mm=7.4%  i=2%    d=10.2% is derived from data from Jain et al (ref [2] below)
+# nanopore      mm=3%    i=3%    d=3%    is from readsim-1.6 (ref [1] below)
 #
 # References
 #   [1] readsim-1.6
@@ -32,10 +32,10 @@ class CatalogEntry: pass
 #       Later version, peer-reviewed, at
 #         https://www.nature.com/articles/nbt.4060
 
-errorProfilePacbio          = {"mm":0.0130, "i":0.0637, "d":0.0362}
-errorProfilePacbioGiab      = {"mm":0.0170, "i":0.0890, "d":0.0430}
+errorProfilePacbioV3        = {"mm":0.0130, "i":0.0637, "d":0.0362}
+errorProfilePacbioV1        = {"mm":0.0170, "i":0.0890, "d":0.0430}
 errorProfilePacbioReadsim   = {"mm":0.01,   "i":0.12,   "d":0.02  }
-errorProfileNanoporeV2      = {"mm":0.0460, "i":0.0378, "d":0.0773}
+errorProfileNanoporeV3      = {"mm":0.0460, "i":0.0378, "d":0.0773}
 errorProfileNanoporeV1      = {"mm":0.074,  "i":0.02,   "d":0.102 }
 errorProfileNanoporeReadSim = {"mm":0.03,   "i":0.03,   "d":0.03  }
 
@@ -138,14 +138,18 @@ def main():
 				minFill = None
 		elif (arg.startswith("--errors=")):
 			errorProfile = None
-			if (argVal in ["pacbio","pacbio.v1","pacbio.Guiblet","pacbio.guiblet"]):
-				errorProfile = errorProfilePacbio
-			elif (argVal in ["pacbio.v2","pacbio.GIAB","pacbio.giab"]):
-				errorProfile = errorProfilePacbioGiab
+			if (argVal in ["pacbio","pacbio.v3","pacbio.GIAB","pacbio.giab"]):
+				errorProfile = errorProfilePacbioV3
+			elif (argVal == "pacbio.v2"):  # for historical reasons, v2 is an alias for v3
+				errorProfile = errorProfilePacbioV3
+			elif (argVal in ["pacbio.v1","pacbio.Guiblet","pacbio.guiblet"]):
+				errorProfile = errorProfilePacbioV1
 			elif (argVal in ["pacbio.readsim"]):
 				errorProfile = errorProfilePacbioReadsim
-			elif (argVal in ["nanopore","nanopore.v2","nanopore.GIAB","nanopore.giab"]):
-				errorProfile = errorProfileNanoporeV2
+			elif (argVal in ["nanopore","nanopore.v3","nanopore.GIAB","nanopore.giab"]):
+				errorProfile = errorProfileNanoporeV3
+			elif (argVal == "nanopore.v2"):  # for historical reasons, v2 is an alias for v3
+				errorProfile = errorProfileNanoporeV3
 			elif (argVal in ["nanopore.v1","nanopore.Jain","nanopore.jain"]):
 				errorProfile = errorProfileNanoporeV1
 			elif (argVal in ["nanopore.readsim"]):
@@ -327,16 +331,22 @@ def main():
 	# apply error profile
 
 	events = profile = None
-	if (errorProfile in ["pacbio","pacbio.Guiblet","pacbio.guiblet","pacbio.v1"]):
-		profile = errorProfilePacbio
-	elif (errorProfile in ["pacbio.GIAB","pacbio.giab","pacbio.v2"]):
-		profile = errorProfilePacbioGiab
-	elif (errorProfile == "pacbio.readsim"):
-		profile = errorProfilePacbioReadsim
-	elif (errorProfile in ["nanopore","nanopore.Jain","nanopore.jain","nanopore.v1"]):
-		profile = errorProfileNanoporeV1
-	elif (errorProfile == "nanopore.readsim"):
-		profile = errorProfileNanoporeReadSim
+	if (argVal in ["pacbio","pacbio.v3","pacbio.GIAB","pacbio.giab"]):
+		errorProfile = errorProfilePacbioV3
+	elif (argVal == "pacbio.v2"):  # for historical reasons, v2 is an alias for v3
+		errorProfile = errorProfilePacbioV3
+	elif (argVal in ["pacbio.v1","pacbio.Guiblet","pacbio.guiblet"]):
+		errorProfile = errorProfilePacbioV1
+	elif (argVal in ["pacbio.readsim"]):
+		errorProfile = errorProfilePacbioReadsim
+	elif (argVal in ["nanopore","nanopore.v3","nanopore.GIAB","nanopore.giab"]):
+		errorProfile = errorProfileNanoporeV3
+	elif (argVal == "nanopore.v2"):  # for historical reasons, v2 is an alias for v3
+		errorProfile = errorProfileNanoporeV3
+	elif (argVal in ["nanopore.v1","nanopore.Jain","nanopore.jain"]):
+		errorProfile = errorProfileNanoporeV1
+	elif (argVal in ["nanopore.readsim"]):
+		errorProfile = errorProfileNanoporeReadSim
 	elif (type(errorProfile) == float):
 		eRate = errorProfile / 3.0;
 		profile = {"mm":eRate, "i":eRate, "d":eRate }
