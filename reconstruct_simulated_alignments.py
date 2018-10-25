@@ -47,10 +47,10 @@ usage: reconstruct_simulated_alignments [options]
                            (but default, we don't filter by length)
   --progress=<number>      periodically report how many reads we've processed
 
-Given a genome and simulated reads sampled by simulate_reads_v4, and the
+Given a genome and simulated reads sampled by ncrf_read_simulator, and the
 corresponding cigars file, alignments are reconstructed. Note that this is
 *not* an aliger; it is just reconstructing the alignment truth that the
-simulate_reads_v4 created.
+ncrf_read_simulator created.
 
 Note that by default we store the entire genome in memory. If the genome is
 large, this could create memory issues. The --chromosomes option can be used to

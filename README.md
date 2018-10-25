@@ -90,7 +90,7 @@ removing alignments in which matches (or errors) aren't uniformly distributed
 across the motif positions.
 
 ```bash  
-./ncrf_cat.py <output_from_NCRF> | ./error_nonuniformity_filter [options]
+./ncrf_cat.py <output_from_NCRF> | ./error_nonuniformity_filter.py [options]
   --method=min-max      judge alignments by a "min-max" test  
                         (this is the default)
   --trials=<number>     number of trials for the min-max test
@@ -150,7 +150,7 @@ alignments that preceded the one being tested.
 ncrf_sort-- Sort the alignments output by Noise Cancelling Repeat Finder.
 
 ```bash  
-./ncrf_cat.py <output_from_NCRF> | ./ncrf_sort [options]
+./ncrf_cat.py <output_from_NCRF> | ./ncrf_sort.py [options]
    --sortby=mratio[-|+]    sort by decreasing or increasing match ratio
                            (by default we sort by decreasing match ratio)
    --sortby=score[-|+]     sort by decreasing or increasing alignment score
@@ -167,7 +167,7 @@ ncrf_summary-- Convert the output of Noise Cancelling Repeat Finder to a
 summary, a tab-delimited table with one line of stats per alignment.
 
 ```bash  
-./ncrf_cat.py <output_from_NCRF> | ./ncrf_summary [options]
+./ncrf_cat.py <output_from_NCRF> | ./ncrf_summary.py [options]
   --minmratio=<ratio>  discard alignments with a low frequency of matches;
                        ratio can be between 0 and 1 (e.g. "0.85"), or can be
                        expressed as a percentage (e.g. "85%")
@@ -184,7 +184,7 @@ Typical output:
 ncrf_to_bed-- Convert the output of Noise Cancelling Repeat Finder to bed format.
 
 ```bash  
-./ncrf_cat.py <output_from_NCRF> | ./ncrf_to_bed [options]
+./ncrf_cat.py <output_from_NCRF> | ./ncrf_to_bed.py [options]
   --minmratio=<ratio>  discard alignments with a low frequency of matches;
                        ratio can be between 0 and 1 (e.g. "0.85"), or can be
                        expressed as a percentage (e.g. "85%")
@@ -205,7 +205,7 @@ alignments.
 _This is no longer needed; error clumps are now detected and excised by NCRF_.
 
 ```bash  
-./ncrf_cat.py <output_from_NCRF> | ./ncrf_error_clumps [options]
+./ncrf_cat.py <output_from_NCRF> | ./ncrf_error_clumps.py [options]
   --maxmratio=<ratio>     identify clumps with no more matches than given ratio; 
                           ratio can be between 0 and 1 (e.g. "0.85"), or can be
                           expressed as a percentage (e.g. "85%")
@@ -225,7 +225,7 @@ per alignment, primarily to show the relative positions of errors along the
 alignment.
 
 ```bash  
-./ncrf_cat.py <output_from_NCRF> | ./ncrf_error_positions [options]
+./ncrf_cat.py <output_from_NCRF> | ./ncrf_error_positions.py [options]
   --minmratio=<ratio>  discard alignments with a low frequency of matches;
                        ratio can be between 0 and 1 (e.g. "0.85"), or can be
                        expressed as a percentage (e.g. "85%")
@@ -247,7 +247,7 @@ ncrf_extract_event_matrix-- Extract the (NON-positional) match-and-error event
 counts matrix from Noise Cancelling Repeat Finder alignments.
 
 ```bash  
-./ncrf_cat.py <output_from_NCRF> | ./ncrf_extract_event_matrix [options]
+./ncrf_cat.py <output_from_NCRF> | ./ncrf_extract_event_matrix.py [options]
   --withheader            include a header line in the output
   --sumonly               include only a summation line in the output
                           (by default, we output a separate line for each
@@ -271,7 +271,7 @@ ncrf_extract_mx_matrix-- Extract the positional match-and-error-counts matrix
 from Noise Cancelling Repeat Finder alignments.
 
 ```bash  
-./ncrf_cat.py <output_from_NCRF> | ./ncrf_extract_mx_matrix [options]
+./ncrf_cat.py <output_from_NCRF> | ./ncrf_extract_mx_matrix.py [options]
   --head=<number>         limit the number of input alignments
 
 The output matrix has R rows and 2M+1 columns, where R is the number of input
@@ -288,14 +288,14 @@ ncrf_msa-- Create an msa (multiple sequence alignment) of each word aligned to
 the motif, in the output of Noise Cancelling Repeat Finder.
 
 ```bash  
-./ncrf_cat.py <output_from_NCRF> | ./ncrf_msa [options]
+./ncrf_cat.py <output_from_NCRF> | ./ncrf_msa.py [options]
   --head=<number>         limit the number of input alignments
 ```
 
 ncrf_resolve_overlaps-- Resolve overlapping alignments of different motifs.
 
 ```bash  
-ncrf_resolve_overlaps <alignment_summary..> [options]
+./ncrf_resolve_overlaps.py <alignment_summary..> [options]
   <alignment_summary>    (cumulative) file(s) containing aligment summaries
                          for which overlaps are to be resolved
   --head=<number>        limit the number of input aligment summaries
@@ -329,7 +329,7 @@ ncrf_words-- Look for prominent "wrong" motifs (words) in the output of Noise
 Cancelling Repeat Finder.
 
 ```bash  
-./ncrf_cat.py <output_from_NCRF> | ./ncrf_words [options]
+./ncrf_cat.py <output_from_NCRF> | ./ncrf_words.py [options]
   --minwordratio=<r>  only show words that have counts that are at least r
                       times the motif word's count (e.g. r=0.5 would show the
                       words that occur at least half as often as the motif)
@@ -356,7 +356,7 @@ fasta_length_distribution-- Read a fasta file and report the distribution of
 sequence lengths.
 
 ```bash  
-cat <fasta_file> | ./fasta_length_distribution [options]
+cat <fasta_file> | ./fasta_length_distribution.py [options]
   --progress=<number>   periodically report how many sequences we've read
 
 The resulting file has two columns -- a sequence length and the number of times
@@ -367,7 +367,7 @@ sum_length_distributions-- Compute the sum of several sequence length
 distribution files.
 
 ```bash  
-cat <length_distribution_files> | ./sum_length_distributions [options]
+cat <length_distribution_files> | ./sum_length_distributions.py [options]
   --report:totals   report total bp, number of sequences, and averge bp per
                     sequence
 
@@ -381,7 +381,7 @@ Output is the same format.
 bin_position_counts-- Accumulate per-position counts into binned intervals.
 
 ```bash  
-cat <counts_file> | ./bin_position_counts [options]
+cat <counts_file> | ./bin_position_counts.py [options]
     bin=<function>     (required) function that maps a position to its bin;
                        positions that map to the same unit interval are in the
                        same bin; an example is "pos/10"
@@ -431,7 +431,7 @@ common_length_distribution-- Given several length distributions, report the
 maximum common distibution.
 
 ```bash  
-common_length_distribution [options]
+./common_length_distribution.py [options]
   <distribution_file>  (cumulative, at least 2 required) length distribution
                        file for one of the input components
   --scale=<number>     factor to multiply the maximum distribution by
@@ -532,7 +532,7 @@ fasta_match_length_distribution-- Spread a given length distribution over
 several component distributions.
 
 ```bash  
-cat <fasta_file> | ./fasta_match_length_distribution [options]
+cat <fasta_file> | ./fasta_match_length_distribution.py [options]
   <distribution_spec>   (required) file describing the length distribution
   --remainder=<file>    write unfulfilled length distribution to a file
   --wrap=<length>       number of nucleotides per line in output fasta
@@ -557,7 +557,7 @@ sam_to_event_matrix-- Extract match, mismatch, insertion, and deletion event
 counts from alignments in sam format.
 
 ```bash  
-cat <sam_file> | ./sam_to_event_matrix [options]
+cat <sam_file> | ./sam_to_event_matrix.py [options]
   --mapq=<num>            ignore alignments with mapping quality (the SAM MAPQ
                           field) below <num>
                           (by default, we accept any mapping quality)
@@ -593,7 +593,7 @@ to infer_scoring.
 parameter_ball-- Vary a set of parameters, inside a "ball".
 
 ```bash  
-parameter_ball <parameter> [options]
+./parameter_ball.py <parameter> [options]
   <parameter>          (cumulative) a parameter and its central value; for
                        example, X=21; the parameter will be varied unless it
                        is in the set of fixed parameters
@@ -633,7 +633,7 @@ mock_motif_genome. It has 12 columns but only the events are used here ("m",
 random_normal-- Generate random numbers, sampled from a normal distribution.
 
 ```bash  
-random_normal <num_values> [options]
+./random_normal.py <num_values> [options]
   <num_values>             number of values to generate
   --mu=<value>             mean value         (default is 0.0)
   --sigma=<value>          standard deviation (default is 1.0)
@@ -647,7 +647,7 @@ random_normal <num_values> [options]
 mock_motif_genome-- Create a mock genome (or a "read") with embedded repeat motifs.
 
 ```bash  
-mock_motif_genome <motif> [options]
+./mock_motif_genome.py <motif> [options]
   <motif>                  (cumulative) motif to embed
   --name=<string>          read name
   --length=<bp>       (L=) read length; if this is absent, the repeats will
@@ -692,7 +692,7 @@ reconstruct_simulated_alignments-- Reconstruct alignments between a genome and
 simulated reads sampled from the genome.
 
 ```bash  
-reconstruct_simulated_alignments [options]
+./reconstruct_simulated_alignments.py [options]
   --genome=<filename>      (mandatory) genome file, fasta or gzipped fasta (an
                            input file)
   --reads=<filename>       (mandatory) genome file, fasta or gzipped fasta (an
@@ -725,10 +725,10 @@ reconstruct_simulated_alignments [options]
                            (but default, we don't filter by length)
   --progress=<number>      periodically report how many reads we've processed
 
-Given a genome and simulated reads sampled by simulate_reads_v4, and the
+Given a genome and simulated reads sampled by ncrf_read_simulator, and the
 corresponding cigars file, alignments are reconstructed. Note that this is
 *not* an aliger; it is just reconstructing the alignment truth that the
-simulate_reads_v4 created.
+ncrf_read_simulator created.
 
 Note that by default we store the entire genome in memory. If the genome is
 large, this could create memory issues. The --chromosomes option can be used to
@@ -745,7 +745,7 @@ map_onto_simulated_reads-- Map intervals from a "genome" to positions on
 simulated reads.
 
 ```bash  
-cat <intervals_file> | ./map_onto_simulated_reads [options]
+cat <intervals_file> | ./map_onto_simulated_reads.py [options]
   --cigars=<filename>    (mandatory) cigar strings file (an input file)
   --stranded=<columns>   (cumulative) input columns which are presumed to have
                          strand info (+ or -) as their final character;
@@ -761,13 +761,99 @@ cat <intervals_file> | ./map_onto_simulated_reads [options]
   --separators           print separating lines between different intervals
                          or reads
 
-Given a genome from which simulated reads were sampled by simulate_reads_v4,
+Given a genome from which simulated reads were sampled by ncrf_read_simulator,
 and the corresponding cigars file, map intervals (or positions) from the genome
 to the corresponding positions on the simulated reads. 
 
 Intervals are one per line, <chrom> start> <end>. Coordinates are zero-based
 and exclude the end position. Any additional columns are copied to the
-output."""
+output.
+```
+
+ncrf_read_simulator-- Convert a fasta file to sampled "reads" in fasta or fastq
+format.
+
+```bash  
+[cat <fasta_file> |] ./ncrf_read_simulator.py [options]
+  <num>x<length>[,<length>]  number and length of reads to generate; the second
+                             length is used for paired reads when the mates
+                             have different lengths; if <length> is "stdin",
+                             lengths are read from stdin
+  [<weight>:]<fasta_file>    (cumulative) sample reads from the specified
+                             genome file; if no files are given, the genome is
+                             read from stdin; <weights> can be used to
+                             control the mixture of reads from different
+                             genomes, and are internally scaled by the length
+                             of the corresponding genome; if the weight is
+                             absent, it is 1.0 by default
+  --insert=<avg>,<stdev>     length of inserts for paired reads
+                             (by default, reads are not paired)
+  --orientation=<T2T|H2H|..> orientation for paired reads; the orientation
+                             can be one of the following:
+                               T2T, RF, PE (these are equivalent)
+                               H2H, FR, MP (these are equivalent)
+                               H2T, FF     (these are equivalent)
+                               T2H, RR     (these are equivalent)
+                             (default is tail-to-tail)
+  --noise=<probability>      inject random sequencing errors (substitutions);
+                             each base suffers a substitution error with the
+                             given probability 
+  --indel=<open>,<extend>    inject random sequencing errors (indels); <open>
+                             is the probability of starting an indel at a
+                             particular base; <extend> is the probability of
+                             extended the gap after each base in the gap;
+                             insertions and deletions are equally probable
+  --errors=pacbio            simulate pacbio error profile
+  --errors=nanopore          simulate nanopore error profile
+  --errors=<spec>            simulate error profile with the given spec; <spec>
+                             looks like this:
+                                mm:1%,i:12%,d:2%
+  --lower                    show substitutions in lowercase
+  --prohibitn[=<length>]     don't sample reads containing a run of Ns; if
+                             <length> is not given, no Ns are allowed
+                             (by default, we do not check for Ns)
+  --name=<template>          name for reads (see description below)
+                             (default is FAKE_READ_[6], but with 6 replaced by
+                             the smallest number sufficient)
+  --width=<characters>       number of characters for each line of output dna;
+                             this is only relevant for fasta output
+                             (default is 100)
+  --fastq                    output in fastq format
+                             (default is fasta format)
+  --intervals                output intervals, without sequence
+  --output[+]=<filename>     write output to the specified file; if <filename>
+                             contains {mate} or {zmate}, paired reads are
+                             written to two files; if the plus sign is used,
+                             we append to the file(s)
+                             (default is stdout)
+  --quality=<character>      set fastq qualities to a constant string of the
+                             specified character (nothing better offered yet)
+                             (default is J)
+  --sam=<filename>           write a sam file equivalent of the generated reads
+                             (currently not available for paired reads)
+  --step=<number>            rather than sampling randomly, start at the
+                             beginning and output a read starting at every Nth
+                             position
+  --strand=<+|->             only create reads from the specified strand
+                             (by default we random choose strands)
+  --cigars=<filename>        write cigar strings to the specified file
+  --seed=<string>            set random seed
+  --progress=<number>        periodically report how many reads we've generated
+
+<template> is like this: BASE{4}_[6] where {4} is replaced by four random
+letters/numbers and [6] is replaced by the read number (in six digits). [*]
+is the read number in 'just enough' digits. Other recognized fields are
+   {chrom}   the name of the sequence the read was drawn from
+   {uchrom}  the name of the sequence the read was drawn from, in uppercase
+   {start}   the starting position on that sequence (origin 1)
+   {zstart}  the starting position on that sequence (origin 0)
+   {end}     the ending position on that sequence
+   {pstart}  the pair's starting position on that sequence (origin 1)
+   {zpstart} the pair's starting position on that sequence (origin 0)
+   {pend}    the pair's ending position on that sequence
+   {strand}  the orientation on that sequence
+   {mate}    for paired reads (1 or 2)
+   {zmate}   for paired reads (0 or 1)
 ```
 
 #### Scripts to evaluate classifier performance
@@ -775,7 +861,7 @@ output."""
 observed_vs_truth-- Compare observed events from alignments to known truth.
 
 ```bash  
-cat <alignment_summary> | ./observed_vs_truth <truth_catalog> [options]
+cat <alignment_summary> | ./observed_vs_truth.py <truth_catalog> [options]
   <truth_catalog>        File containing aligment "truth"; the format of this
                          file depends on whether we have alignments to a genome
                          or alignments to reads (see below)
@@ -839,7 +925,7 @@ harvest_trf_html-- Convert alignments from TRF (Tandem Repeat Finder) html
 output to a tabular text format similar to an NcRF summary.
 
 ```bash  
-cat <trf_html_output> | ./harvest_trf_html [options]
+cat <trf_html_output> | ./harvest_trf_html.py [options]
   --motif=<motif>        (cumulative) motifs of interest; alignments for other
                          motifs are discarded
                          (if this is not provided, we keep all alignments)
@@ -853,7 +939,7 @@ minimap2_cs_to_events-- Convert the cs tag in minimap2 output to ncrf-style
 event counts.
 
 ```bash  
-cat <output_from_minimap2> | ./minimap2_cs_to_events [options]
+cat <output_from_minimap2> | ./minimap2_cs_to_events.py [options]
   --minquality=<qual>  discard low quality alignments
   --withheader         include a header line in the output
   --remove:cs          remove the cs tag
@@ -865,8 +951,8 @@ run with the "--cs=short" option.
 
 #### Other scripts
 
-ncrf_parse, echydna, interval_dict-- _These support the other scripts and
-should not be used directly_.
+ncrf_parse, echydna, interval_dict, and prob_table-- _These support the other
+scripts and should not be used directly_.
 
 ### R plotting functions 
 
