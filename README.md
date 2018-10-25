@@ -37,7 +37,7 @@ helper programs included in the package.
 The simplest use, searching reads.fa for the repeated motif GGCAT:
 
 ```bash 
-cat reads.fa | NCRF GGCAT > example.ncrf
+cat reads.fa | ./NCRF GGCAT > example.ncrf
 ```
 
 A more detailed example is shown in example/README.md.  A description of the
@@ -82,7 +82,7 @@ To feed to output from several runs of NCRF into a script, ncrf_cat is
 necessary (as opposed to the usual shell command "cat").
 
 ```bash  
-ncrf_cat <file1> [<file2> ...]
+./ncrf_cat.py <file1> [<file2> ...]
 ```
 
 error_nonuniformity_filter-- Filter the output of Noise Cancelling Repeat Finder,
@@ -90,7 +90,7 @@ removing alignments in which matches (or errors) aren't uniformly distributed
 across the motif positions.
 
 ```bash  
-ncrf_cat <output_from_NCRF> | error_nonuniformity_filter [options]
+./ncrf_cat.py <output_from_NCRF> | ./error_nonuniformity_filter [options]
   --method=min-max      judge alignments by a "min-max" test  
                         (this is the default)
   --trials=<number>     number of trials for the min-max test
@@ -150,7 +150,7 @@ alignments that preceded the one being tested.
 ncrf_sort-- Sort the alignments output by Noise Cancelling Repeat Finder.
 
 ```bash  
-ncrf_cat <output_from_NCRF> | ncrf_sort [options]
+./ncrf_cat.py <output_from_NCRF> | ./ncrf_sort [options]
    --sortby=mratio[-|+]    sort by decreasing or increasing match ratio
                            (by default we sort by decreasing match ratio)
    --sortby=score[-|+]     sort by decreasing or increasing alignment score
@@ -167,7 +167,7 @@ ncrf_summary-- Convert the output of Noise Cancelling Repeat Finder to a
 summary, a tab-delimited table with one line of stats per alignment.
 
 ```bash  
-ncrf_cat <output_from_NCRF> | ncrf_summary [options]
+./ncrf_cat.py <output_from_NCRF> | ./ncrf_summary [options]
   --minmratio=<ratio>  discard alignments with a low frequency of matches;
                        ratio can be between 0 and 1 (e.g. "0.85"), or can be
                        expressed as a percentage (e.g. "85%")
@@ -184,7 +184,7 @@ Typical output:
 ncrf_to_bed-- Convert the output of Noise Cancelling Repeat Finder to bed format.
 
 ```bash  
-ncrf_cat <output_from_NCRF> | ncrf_to_bed [options]
+./ncrf_cat.py <output_from_NCRF> | ./ncrf_to_bed [options]
   --minmratio=<ratio>  discard alignments with a low frequency of matches;
                        ratio can be between 0 and 1 (e.g. "0.85"), or can be
                        expressed as a percentage (e.g. "85%")
@@ -205,7 +205,7 @@ alignments.
 _This is no longer needed; error clumps are now detected and excised by NCRF_.
 
 ```bash  
-ncrf_cat <output_from_NCRF> | ncrf_error_clumps [options]
+./ncrf_cat.py <output_from_NCRF> | ./ncrf_error_clumps [options]
   --maxmratio=<ratio>     identify clumps with no more matches than given ratio; 
                           ratio can be between 0 and 1 (e.g. "0.85"), or can be
                           expressed as a percentage (e.g. "85%")
@@ -225,7 +225,7 @@ per alignment, primarily to show the relative positions of errors along the
 alignment.
 
 ```bash  
-ncrf_cat <output_from_NCRF> | ncrf_error_positions [options]
+./ncrf_cat.py <output_from_NCRF> | ./ncrf_error_positions [options]
   --minmratio=<ratio>  discard alignments with a low frequency of matches;
                        ratio can be between 0 and 1 (e.g. "0.85"), or can be
                        expressed as a percentage (e.g. "85%")
@@ -247,7 +247,7 @@ ncrf_extract_event_matrix-- Extract the (NON-positional) match-and-error event
 counts matrix from Noise Cancelling Repeat Finder alignments.
 
 ```bash  
-ncrf_cat <output_from_NCRF> | ncrf_extract_event_matrix [options]
+./ncrf_cat.py <output_from_NCRF> | ./ncrf_extract_event_matrix [options]
   --withheader            include a header line in the output
   --sumonly               include only a summation line in the output
                           (by default, we output a separate line for each
@@ -271,7 +271,7 @@ ncrf_extract_mx_matrix-- Extract the positional match-and-error-counts matrix
 from Noise Cancelling Repeat Finder alignments.
 
 ```bash  
-ncrf_cat <output_from_NCRF> | ncrf_extract_mx_matrix [options]
+./ncrf_cat.py <output_from_NCRF> | ./ncrf_extract_mx_matrix [options]
   --head=<number>         limit the number of input alignments
 
 The output matrix has R rows and 2M+1 columns, where R is the number of input
@@ -288,7 +288,7 @@ ncrf_msa-- Create an msa (multiple sequence alignment) of each word aligned to
 the motif, in the output of Noise Cancelling Repeat Finder.
 
 ```bash  
-ncrf_cat <output_from_NCRF> | ncrf_msa [options]
+./ncrf_cat.py <output_from_NCRF> | ./ncrf_msa [options]
   --head=<number>         limit the number of input alignments
 ```
 
@@ -329,7 +329,7 @@ ncrf_words-- Look for prominent "wrong" motifs (words) in the output of Noise
 Cancelling Repeat Finder.
 
 ```bash  
-ncrf_cat <output_from_NCRF> | ncrf_words [options]
+./ncrf_cat.py <output_from_NCRF> | ./ncrf_words [options]
   --minwordratio=<r>  only show words that have counts that are at least r
                       times the motif word's count (e.g. r=0.5 would show the
                       words that occur at least half as often as the motif)
@@ -341,7 +341,7 @@ event_matrix_to_rates-- Read match-and-error event counts and report overall
 event rates.
 
 ```bash  
-cat <event_counts_table> | event_matrix_to_rates
+cat <event_counts_table> | ./event_matrix_to_rates
 
 The input is usually the output from ncrf_extract_event_matrix.  It has 9
 columns, first three of which are ignored here. The remaining columns are,
@@ -356,7 +356,7 @@ fasta_length_distribution-- Read a fasta file and report the distribution of
 sequence lengths.
 
 ```bash  
-cat <fasta_file> | fasta_length_distribution [options]
+cat <fasta_file> | ./fasta_length_distribution [options]
   --progress=<number>   periodically report how many sequences we've read
 
 The resulting file has two columns -- a sequence length and the number of times
@@ -367,7 +367,7 @@ sum_length_distributions-- Compute the sum of several sequence length
 distribution files.
 
 ```bash  
-cat <length_distribution_files> | sum_length_distributions [options]
+cat <length_distribution_files> | ./sum_length_distributions [options]
   --report:totals   report total bp, number of sequences, and averge bp per
                     sequence
 
@@ -381,7 +381,7 @@ Output is the same format.
 bin_position_counts-- Accumulate per-position counts into binned intervals.
 
 ```bash  
-cat <counts_file> | bin_position_counts [options]
+cat <counts_file> | ./bin_position_counts [options]
     bin=<function>     (required) function that maps a position to its bin;
                        positions that map to the same unit interval are in the
                        same bin; an example is "pos/10"
@@ -532,7 +532,7 @@ fasta_match_length_distribution-- Spread a given length distribution over
 several component distributions.
 
 ```bash  
-cat <fasta_file> | fasta_match_length_distribution [options]
+cat <fasta_file> | ./fasta_match_length_distribution [options]
   <distribution_spec>   (required) file describing the length distribution
   --remainder=<file>    write unfulfilled length distribution to a file
   --wrap=<length>       number of nucleotides per line in output fasta
@@ -557,7 +557,7 @@ sam_to_event_matrix-- Extract match, mismatch, insertion, and deletion event
 counts from alignments in sam format.
 
 ```bash  
-cat <sam_file> | sam_to_event_matrix [options]
+cat <sam_file> | ./sam_to_event_matrix [options]
   --mapq=<num>            ignore alignments with mapping quality (the SAM MAPQ
                           field) below <num>
                           (by default, we accept any mapping quality)
@@ -621,7 +621,7 @@ truth_to_rates-- Read event counts from a truth catalog and report overall
 induced event rates.
 
 ```bash  
-cat <truth_catalog> | truth_to_rates
+cat <truth_catalog> | ./truth_to_rates
 
 The truth catalog is usually the output from the --catalog option of
 mock_motif_genome. It has 12 columns but only the events are used here ("m",
@@ -745,7 +745,7 @@ map_onto_simulated_reads-- Map intervals from a "genome" to positions on
 simulated reads.
 
 ```bash  
-cat <intervals_file> | map_onto_simulated_reads [options]
+cat <intervals_file> | ./map_onto_simulated_reads [options]
   --cigars=<filename>    (mandatory) cigar strings file (an input file)
   --stranded=<columns>   (cumulative) input columns which are presumed to have
                          strand info (+ or -) as their final character;
@@ -774,7 +774,7 @@ additional columns are copied to the output.
 observed_vs_truth-- Compare observed events from alignments to known truth.
 
 ```bash  
-cat <alignment_summary> | observed_vs_truth <truth_catalog> [options]
+cat <alignment_summary> | ./observed_vs_truth <truth_catalog> [options]
   <truth_catalog>        File containing aligment "truth"; the format of this
                          file depends on whether we have alignments to a genome
                          or alignments to reads (see below)
@@ -838,7 +838,7 @@ harvest_trf_html-- Convert alignments from TRF (Tandem Repeat Finder) html
 output to a tabular text format similar to an NcRF summary.
 
 ```bash  
-cat <trf_html_output> | harvest_trf_html [options]
+cat <trf_html_output> | ./harvest_trf_html [options]
   --motif=<motif>        (cumulative) motifs of interest; alignments for other
                          motifs are discarded
                          (if this is not provided, we keep all alignments)
@@ -852,7 +852,7 @@ minimap2_cs_to_events-- Convert the cs tag in minimap2 output to ncrf-style
 event counts.
 
 ```bash  
-cat <output_from_minimap2> | minimap2_cs_to_events [options]
+cat <output_from_minimap2> | ./minimap2_cs_to_events [options]
   --minquality=<qual>  discard low quality alignments
   --withheader         include a header line in the output
   --remove:cs          remove the cs tag
@@ -875,9 +875,9 @@ error event ratios.
 in shell:
 ```bash  
   cat malus.reads.fa \
-    | NCRF GGAAT \
+    | ./NCRF GGAAT \
     | tee malus.unfiltered.ncrf \
-    | ncrf_extract_event_matrix --withheader \
+    | ./ncrf_extract_event_matrix.py --withheader \
     > malus.unfiltered.events.dat
 ```
 
@@ -892,12 +892,12 @@ plot_ncrf_filter_results-- Plot errors vs matches by filtering class.
 in shell:
 ```bash  
   cat malus.reads.fa \
-    | NCRF GGAAT --positionalevents \
+    | ./NCRF GGAAT --positionalevents \
     | tee malus.ncrf \
-    | error_nonuniformity_filter \
+    | ./error_nonuniformity_filter.py \
     > malus.ncrf
   cat malus.ncrf \
-    | error_nonuniformity_filter --report:matrix \
+    | ./error_nonuniformity_filter.py --report:matrix \
     > malus.filter_results.dat
 ```
 
@@ -912,9 +912,9 @@ read_ncrf_summary-- Read an ncrf summary.
 in shell:
 ```bash  
   cat malus.reads.fa \
-    | NCRF GGAAT --positionalevents \
-    | error_nonuniformity_filter \
-    | ncrf_summary \
+    | ./NCRF GGAAT --positionalevents \
+    | ./error_nonuniformity_filter.py \
+    | ./ncrf_summary.py \
     > malus.summary
 ```
 

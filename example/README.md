@@ -111,22 +111,22 @@ of deletions were observed. Second, our motif is aligned to GGAT (58) as often
 as to GGAAT (51). In fact, this segment probably contains a mix of those two
 motifs.
 
-(3) Filtering using positional events.
+(3) Filtering for error uniformity.
 
-Ncrf_positional_filter is a post processor that automatically discards
+Error_non_uniformity_filter.py is a post processor that automatically discards
 alignments like the one in the previous example. It performs a statistical
 test on the positional alignment stats and discards an alignment if the stats
-are too far from a uniform distribution across the motif positions.
+are inconsistent with a uniform distribution across the motif positions.
 
-Run Noise Cancelling Repeat Finder again, passing the output through the
-positional filter.
+Run Noise Cancelling Repeat Finder again, passing the output through the error
+non-uniformity filter.
 
 ```bash 
     cat example.fa \
       | ../NCRF GGAAT \
           --minlength=500 --maxnoise=20% \
           --stats=events --positionalevents \
-      | ../ncrf_positional_filter.py \
+      | ../error_non_uniformity_filter.py \
       | ../ncrf_words.py --minwordratio=0 \
       | ../ncrf_sort.py --sortby=mratio \
       > example.filtered.ncrf
@@ -149,26 +149,22 @@ segments.
 The tab-delimited output should look like this:
 
 ```bash 
-#line motif seq          start end   strand seqLen querybp mRatio m    mm i   d
-1     GGAAT NCRF_EXAMPLE 31854 32647 +      50000  771     91.7%  744  9  40  18
-11    GGAAT NCRF_EXAMPLE 14029 15525 +      50000  1453    91.4%  1400 17 79  36
-21    GGAAT NCRF_EXAMPLE 24105 24972 +      50000  852     90.9%  814  10 43  28
-31    GGAAT NCRF_EXAMPLE 33044 33866 +      50000  796     90.8%  763  15 44  18
-41    GGAAT NCRF_EXAMPLE 45378 46122 -      50000  723     90.5%  692  10 42  21
-51    GGAAT NCRF_EXAMPLE 40889 41729 -      50000  825     90.4%  785  12 43  28
-61    GGAAT NCRF_EXAMPLE 47778 48345 -      50000  563     90.2%  532  8  27  23
-71    GGAAT NCRF_EXAMPLE 661   1703  +      50000  1011    90.1%  965  17 60  29
-81    GGAAT NCRF_EXAMPLE 46204 46731 +      50000  518     90.1%  493  5  29  20
-91    GGAAT NCRF_EXAMPLE 20556 21422 -      50000  846     90.0%  805  13 48  28
-101   GGAAT NCRF_EXAMPLE 48657 49997 -      50000  1310    89.9%  1243 24 73  43
-111   GGAAT NCRF_EXAMPLE 41829 42471 +      50000  627     89.5%  594  11 37  22
-121   GGAAT NCRF_EXAMPLE 42762 43707 +      50000  918     89.5%  874  12 59  32
-131   GGAAT NCRF_EXAMPLE 22894 24093 -      50000  1148    89.2%  1098 18 83  32
-141   GGAAT NCRF_EXAMPLE 16059 17456 -      50000  1335    89.1%  1277 21 99  37
-151   GGAAT NCRF_EXAMPLE 37074 37814 +      50000  801     84.7%  698  19 23  84
-161   GGAAT NCRF_EXAMPLE 21625 22576 +      50000  1016    83.5%  883  27 41  106
-171   GGAAT NCRF_EXAMPLE 12611 13900 +      50000  1151    82.8%  1090 34 165 27
-181   GGAAT NCRF_EXAMPLE 9924  11425 +      50000  1328    82.7%  1264 36 201 28
+#line motif seq          start end   strand seqLen querybp mRatio m    mm i  d
+1     GGAAT NCRF_EXAMPLE 31854 32647 +      50000  771     91.7%  744  9  40 18
+11    GGAAT NCRF_EXAMPLE 14029 15525 +      50000  1453    91.4%  1400 17 79 36
+21    GGAAT NCRF_EXAMPLE 24105 24972 +      50000  852     90.9%  814  10 43 28
+31    GGAAT NCRF_EXAMPLE 33044 33866 +      50000  796     90.8%  763  15 44 18
+41    GGAAT NCRF_EXAMPLE 45378 46122 -      50000  723     90.5%  692  10 42 21
+51    GGAAT NCRF_EXAMPLE 40889 41729 -      50000  825     90.4%  785  12 43 28
+61    GGAAT NCRF_EXAMPLE 47778 48345 -      50000  563     90.2%  532  8  27 23
+71    GGAAT NCRF_EXAMPLE 661   1703  +      50000  1011    90.1%  965  17 60 29
+81    GGAAT NCRF_EXAMPLE 46204 46731 +      50000  518     90.1%  493  5  29 20
+91    GGAAT NCRF_EXAMPLE 20556 21422 -      50000  846     90.0%  805  13 48 28
+101   GGAAT NCRF_EXAMPLE 48657 49997 -      50000  1310    89.9%  1243 24 73 43
+111   GGAAT NCRF_EXAMPLE 41829 42471 +      50000  627     89.5%  594  11 37 22
+121   GGAAT NCRF_EXAMPLE 42762 43707 +      50000  918     89.5%  874  12 59 32
+131   GGAAT NCRF_EXAMPLE 22894 24093 -      50000  1148    89.2%  1098 18 83 32
+141   GGAAT NCRF_EXAMPLE 16059 17456 -      50000  1335    89.1%  1277 21 99 37
 ```
 
 The first column is the line number of the alignment in the alignment file. The
