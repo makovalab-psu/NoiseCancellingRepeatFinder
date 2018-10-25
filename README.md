@@ -29,7 +29,8 @@ directory to your PATH variable.
 4. You may wish to create symbolic links to the python scripts, so that they
 can be used on a command line by name (without the .py part).
 ```bash  
-    cd make_symbolic_links.sh  
+    cd NoiseCancellingRepeatFinder  
+    ./make_symbolic_links.sh  
 ```
 
 ### Prerequisites
