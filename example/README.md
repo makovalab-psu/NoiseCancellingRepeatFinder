@@ -4,8 +4,7 @@ This directory contains a toy example in a small fasta file, example.fa, and
 expected results files -- expected.unfiltered.ncrf, expected.filtered.ncrf, and
 expected.summary.
 
-#### (1) Run Noise Cancelling Repeat Finder to align the sequence to repeats of the
-motif GGAAT. ####
+#### (1) Run Noise Cancelling Repeat Finder to align sequence to repeats.
 
 ```bash 
     cat example.fa \
@@ -88,7 +87,7 @@ had a count for some other motif nearly as high as for GGAAT, that would
 suggest GGAAT wasn't a good match. Reporting of these counts can be disabled by
 removing ncrf_words from the command pipeline.
 
-#### (2) False alignments to similar motifs. ####
+#### (2) False alignments to similar motifs.
 
 One of the difficulties that arises, because we allow so much noise in the
 alignments, is a motif will align to segments that are better matches for
@@ -114,7 +113,7 @@ of deletions were observed. Second, our motif is aligned to GGAT (58) as often
 as to GGAAT (51). In fact, this segment probably contains a mix of those two
 motifs.
 
-#### (3) Filtering for error uniformity. ####
+#### (3) Filtering for error uniformity.
 
 Error_non_uniformity_filter.py is a post processor that automatically discards
 alignments like the one in the previous example. It performs a statistical
@@ -138,7 +137,7 @@ non-uniformity filter.
 The output file should match expected.filtered.ncrf. Comparing to the earlier
 unfiltered output, the suspect alignment is not included in the filtered output.
 
-#### (4) Alignment summary. ####
+#### (4) Alignment summary.
 
 Pass the output through ncrf_summary to get a tabular listing of the aligned
 segments.
