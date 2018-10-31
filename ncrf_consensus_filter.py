@@ -119,8 +119,11 @@ def main():
 		# report the consensus and msa, if we're supposed to
 
 		if (reportConsensus):
-			for word in consensuses:
-				print "# consensus %s" % word
+			if (consensuses == []):
+				print "# consensus (none)"
+			else:
+				for word in consensuses:
+					print "# consensus %s" % word
 
 		if (reportMsa):
 			motifLen = len(a.motif)
