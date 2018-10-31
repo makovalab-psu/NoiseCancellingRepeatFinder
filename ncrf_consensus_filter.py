@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
-Create an msa (multiple sequence alignmnent) of each word aligned to the motif,
-in the output of Noise Cancelling Repeat Finder.
+Filter Noise Cancelling Repeat Finder alignments, discarding alignments that
+has a consensus different than the motif unit.
 """
 
 from sys        import argv,stdin,stdout,stderr,exit
@@ -10,10 +10,10 @@ from ncrf_parse import alignments,reverse_complement,int_with_unit
 
 def usage(s=None):
 	message = """
-usage: ncrf_cat <output_from_NCRF> | ncrf_msa [options]
-  --consensus         report the consensus motif
-  --consensusonly     only report the consensus motif
-                      (by default, we report the multiple alignmnent)
+usage: ncrf_cat <output_from_NCRF> | ncrf_consensus_filter [options]
+  --consensusonly     just report the consensus motif(s) for each alignment,
+                      instead of filtering; these are added to the alignment
+                      file with a "# consensus" tag
   --head=<number>     limit the number of input alignments"""
 
 	if (s == None): exit (message)
@@ -27,8 +27,9 @@ def main():
 
 	# parse the command line
 
-	reportMsa       = True
+	filterToKeep    = "consensus"
 	reportConsensus = False
+	reportMsa       = False
 	headLimit       = None
 	requireEof      = True
 	debug           = []
@@ -37,10 +38,25 @@ def main():
 		if ("=" in arg):
 			argVal = arg.split("=",1)[1]
 
-		if (arg == "--consensus"):
+		if (arg == "--nonconsensus"):   # (unadvertised)
+			filterToKeep    = "non consensus"
+			reportMsa       = False
+			reportConsensus = True
+		elif (arg == "--nonconsensus,msa"):   # (unadvertised)
+			filterToKeep    = "non consensus"
+			reportMsa       = True
 			reportConsensus = True
 		elif (arg == "--consensusonly"):
+			filterToKeep    = "no filter"
 			reportMsa       = False
+			reportConsensus = True
+		elif (arg == "--filter,consensus"):   # (unadvertised)
+			filterToKeep    = "consensus"
+			reportMsa       = False
+			reportConsensus = True
+		elif (arg == "--msa"):   # (unadvertised)
+			filterToKeep    = "no filter"
+			reportMsa       = True
 			reportConsensus = True
 		elif (arg.startswith("--head=")):
 			headLimit = int_with_unit(argVal)
@@ -58,15 +74,13 @@ def main():
 	# process the alignments
 
 	alignmentNum = 0
+	alignmentsWritten = 0
 	for a in alignments(stdin,requireEof):
 		alignmentNum += 1 
 
 		if (headLimit != None) and (alignmentNum > headLimit):
 			print >>stderr, "limit of %d alignments reached" % headLimit
 			break
-
-		if (alignmentNum > 1): print
-		print "\n".join(a.lines)
 
 		motifText = a.motifText
 		seqText   = a.seqText
@@ -77,7 +91,35 @@ def main():
 			motifText = reverse_complement(motifText)
 			seqText   = reverse_complement(seqText)
 
+		# derive consensus; this can actually be a set of more than one
+		# candidate
+
 		seqChunks = chunkify(a.motif,motifText,seqText)
+
+		consensuses = list(derive_consensus(seqChunks,closeEnough=closeEnough))
+
+		# discard the alignment if it meets the filtering criterion (if there
+		# is any such criterion)
+
+		if (filterToKeep == "consensus"):
+			if (a.motif not in consensuses): continue  # (discard it)
+		elif (filterToKeep == "non consensus"):
+			if (a.motif in consensuses): continue  # (discard it)
+		else: # if (filterToKeep == "no filter"):
+			pass
+
+		# copy the (unfiltered) alignment to the output
+
+		if (alignmentsWritten > 0): print
+		alignmentsWritten += 1
+
+		print "\n".join(a.lines)
+
+		# report the consensus and msa, if we're supposed to
+
+		if (reportConsensus):
+			for word in derive_consensus(seqChunks,closeEnough=closeEnough):
+				print "# consensus %s" % word
 
 		if (reportMsa):
 			motifLen = len(a.motif)
@@ -102,10 +144,6 @@ def main():
 					else:
 						line += [seqNucs.ljust(positionLength[motifIx],".")]
 				print "# msa.seq   %s" % "".join(line)
-
-		if (reportConsensus):
-			for word in derive_consensus(seqChunks,closeEnough=closeEnough):
-				print "# consensus %s" % word
 
 	if (requireEof):
 		print "# ncrf end-of-file"

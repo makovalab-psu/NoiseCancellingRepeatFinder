@@ -94,9 +94,22 @@ necessary (as opposed to the usual shell command "cat").
 ./ncrf_cat.py <file1> [<file2> ...]
 ```
 
+ncrf_consensus_filter-- Filter Noise Cancelling Repeat Finder alignments, discarding alignments that
+has a consensus different than the motif unit.
+
+```bash  
+./ncrf_cat.py <output_from_NCRF> | ./ncrf_consensus_filter.py [options]
+  --consensusonly     just report the consensus motif(s) for each alignment,
+                      instead of filtering; these are added to the alignment
+                      file with a "# consensus" tag
+  --head=<number>     limit the number of input alignments
+```
+
 error_nonuniformity_filter-- Filter the output of Noise Cancelling Repeat Finder,
 removing alignments in which matches (or errors) aren't uniformly distributed
 across the motif positions.
+
+_THIS MAY NEED TO BE RELEGATED TO THE ADDITIONAL COMMANDS_
 
 ```bash  
 ./ncrf_cat.py <output_from_NCRF> | ./error_nonuniformity_filter.py [options]
@@ -291,14 +304,6 @@ The first column is the line number of the alignment in the input file.  The
 next M columns are the positional counts for matches ("m"), and the final M
 columns are the positional counts for errors ("x").  The output is intended
 to be suitable as input to R.
-```
-
-ncrf_msa-- Create an msa (multiple sequence alignment) of each word aligned to
-the motif, in the output of Noise Cancelling Repeat Finder.
-
-```bash  
-./ncrf_cat.py <output_from_NCRF> | ./ncrf_msa.py [options]
-  --head=<number>         limit the number of input alignments
 ```
 
 ncrf_resolve_overlaps-- Resolve overlapping alignments of different motifs.
