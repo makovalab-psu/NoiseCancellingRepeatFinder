@@ -5,7 +5,7 @@ has a consensus different than the motif unit.
 """
 
 from sys        import argv,stdin,stdout,stderr,exit
-from ncrf_parse import alignments,reverse_complement,int_with_unit
+from ncrf_parse import alignments,reverse_complement,parse_probability,int_with_unit
 
 
 def usage(s=None):
@@ -23,13 +23,12 @@ usage: ncrf_cat <output_from_NCRF> | ncrf_consensus_filter [options]
 def main():
 	global debug
 
-	closeEnough     = 1  # (see derive_consensus)
-
 	# parse the command line
 
 	filterToKeep    = "consensus"
 	reportConsensus = False
 	reportMsa       = False
+	winnerThreshold = 0.65  # (see derive_consensus)
 	headLimit       = None
 	requireEof      = True
 	debug           = []
@@ -58,6 +57,8 @@ def main():
 			filterToKeep    = "no filter"
 			reportMsa       = True
 			reportConsensus = True
+		elif (arg.startswith("--winner=")):   # (unadvertised)
+			winnerThreshold = parse_probability(argVal)
 		elif (arg.startswith("--head=")):
 			headLimit = int_with_unit(argVal)
 		elif (arg in ["--noendmark","--noeof","--nomark"]):   # (unadvertised)
@@ -96,7 +97,7 @@ def main():
 
 		seqChunks = chunkify(a.motif,motifText,seqText)
 
-		consensuses = list(derive_consensus(seqChunks,closeEnough=closeEnough))
+		consensuses = list(derive_consensus(seqChunks,winnerThreshold=winnerThreshold))
 
 		# discard the alignment if it meets the filtering criterion (if there
 		# is any such criterion)
@@ -118,7 +119,7 @@ def main():
 		# report the consensus and msa, if we're supposed to
 
 		if (reportConsensus):
-			for word in derive_consensus(seqChunks,closeEnough=closeEnough):
+			for word in consensuses:
 				print "# consensus %s" % word
 
 		if (reportMsa):
@@ -250,7 +251,7 @@ def position_in_motif(motif,text):
 #	long as the motif, consisting of the string (the nt or nts) matched to each
 #	position in the motif.
 
-def derive_consensus(seqChunks,closeEnough=0):
+def derive_consensus(seqChunks,winnerThreshold=0):
 	if (seqChunks == []): return
 	motifLen = len(seqChunks[0])
 
@@ -278,11 +279,10 @@ def derive_consensus(seqChunks,closeEnough=0):
 		ixToTokens[motifIx].sort()
 		ixToTokens[motifIx].reverse()
 
-		(bestCount,_) = ixToTokens[motifIx][0]
-
+		tokensCount = sum([count for (count,_) in ixToTokens[motifIx]])
 		ixToTokens[motifIx] = [ixToTokens[motifIx][ix]
 		                         for (ix,(count,_)) in enumerate(ixToTokens[motifIx])
-		                         if (count >= bestCount-closeEnough)]
+		                         if (count >= winnerThreshold*tokensCount)]
 
 		if ("consensus" in debug):
 			for (count,seqNucs) in ixToTokens[motifIx]:
@@ -294,7 +294,10 @@ def derive_consensus(seqChunks,closeEnough=0):
 
 	motif = []
 	for motifIx in xrange(motifLen):
-		(_,bestSeqNucs) = ixToTokens[motifIx][0]
+		tokensSeen = ixToTokens[motifIx]
+		if (tokensSeen == []):   # (no consensus can be formed, because nothing
+			return               #  .. in this column is a clear winner)
+		(_,bestSeqNucs) = tokensSeen[0]
 		motif += [bestSeqNucs]
 
 	yield "".join(motif)
