@@ -29,7 +29,6 @@ def main():
 	filterToKeep    = "consensus"
 	reportConsensus = False
 	reportMsa       = False
-	pThreshold      = 0.75  # (see derive_consensuses)
 	winnerThreshold = 0.65  # (see derive_consensuses)
 	headLimit       = None
 	requireEof      = True
@@ -59,10 +58,6 @@ def main():
 			filterToKeep    = "no filter"
 			reportMsa       = True
 			reportConsensus = True
-		elif (arg.startswith("--p=")):   # (unadvertised)
-			pThreshold = parse_probability(argVal)
-		elif (arg == "--nop"):   # (unadvertised)
-			pThreshold = None
 		elif (arg.startswith("--winner=")):   # (unadvertised)
 			winnerThreshold = parse_probability(argVal)
 		elif (arg.startswith("--head=")):
@@ -108,14 +103,7 @@ def main():
 			print >>stderr
 			print >>stderr, "%d score=%d" % (a.lineNumber,a.score)
 
-		if (pThreshold != None):
-			consensuses = derive_consensuses(seqChunks,
-			                                 expectedMotif=a.motif,pThreshold=pThreshold,
-			                                 winnerThreshold=winnerThreshold)
-		else:
-			consensuses = derive_consensuses(seqChunks,
-			                                 winnerThreshold=winnerThreshold)
-
+		consensuses = derive_consensuses(seqChunks,winnerThreshold=winnerThreshold)
 		consensuses = list(consensuses)
 
 		# discard the alignment if it meets the filtering criterion (if there
@@ -269,13 +257,9 @@ def position_in_motif(motif,text):
 
 # derive_consensuses--
 #	Yields a series of potential consensus motifs for a given alignment. The
-#	input is a list of sublists (as created by chunkify).  Each sublist is as
-#	long as the motif, consisting of the string (the nt or nts) matched to each
-#	position in the motif.
+#	input is a list of sublists (as created by chunkify).
 
-def derive_consensuses(seqChunks,
-                       expectedMotif=None,pThreshold=0.75,
-                       winnerThreshold=0):
+def derive_consensuses(seqChunks,winnerThreshold=0.50):
 	if (seqChunks == []): return
 	motifLen = len(seqChunks[0])
 
@@ -316,48 +300,6 @@ def derive_consensuses(seqChunks,
 		                          for (ix,(count,_)) in enumerate(ixToTokens[motifIx])
 		                          if (count >= winnerThreshold*tokensCount)]
 
-	# determine whether the 'expected' consensus is sufficiently represented
-	# in the observations
-	#
-	# at each position i, some fraction p_i of the tokens matches the expected
-	# motif; we compute the (geometric) average of p_i over all positions; if
-	# that average is above a given threshold, we report the expected motif as
-	# a consensus
-
-	motifsReported = set()
-
-	logOfP = None
-
-	if (expectedMotif != None):
-		logOfP = 0.0
-		for (motifIx,expectedNuc) in enumerate(expectedMotif):
-			tokensSeen = {seqNucs:count for (count,seqNucs) in ixToTokens[motifIx]}
-			if (expectedNuc not in tokensSeen):
-				logOfP = None
-				if ("consensus" in debug):
-					print >>stderr, "# %s p%d=%d/%d=%.3f" % \
-					                (expectedNuc,motifIx,0,float(tokensCount),0)
-				break
-
-			tokensCount = sum([tokensSeen[count] for count in tokensSeen])
-			logOfP += log(tokensSeen[expectedNuc] / float(tokensCount))
-
-			if ("consensus" in debug):
-				print >>stderr, "# %s p%d=%d/%d=%.3f log=%.3f" % \
-				                (expectedNuc,
-				                 motifIx,tokensSeen[expectedNuc],float(tokensCount),
-				                 tokensSeen[expectedNuc] / float(tokensCount),
-				                 log(tokensSeen[expectedNuc] / float(tokensCount)))
-
-	if (logOfP != None):
-		if ("consensus" in debug):
-			print >>stderr, "# logOfP=%.3f avg=%.3f avgP=%.3f" % \
-			                (logOfP,logOfP/motifLen,exp(logOfP/motifLen))
-		if (logOfP >= motifLen*log(pThreshold)):
-			# exp(logOfP/motifLen) >= pThreshold
-			yield expectedMotif
-			motifsReported.add(expectedMotif)
-
 	# generate the possible consensus motifs
 	#
 	# at each position i, we previously determined which token (or tokens) is
@@ -366,6 +308,8 @@ def derive_consensuses(seqChunks,
 	#
 	# $$$ change this to include positions that have more than one winner,
 	#     reporting all possible paths through the winners list
+
+	motifsReported = set()
 
 	if (winnerThreshold != None):
 		motif = []
