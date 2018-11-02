@@ -5,6 +5,7 @@ has a consensus different than the motif unit.
 """
 
 from sys        import argv,stdin,stdout,stderr,exit
+from math       import log,exp
 from ncrf_parse import alignments,reverse_complement,parse_probability,int_with_unit
 
 
@@ -28,7 +29,8 @@ def main():
 	filterToKeep    = "consensus"
 	reportConsensus = False
 	reportMsa       = False
-	winnerThreshold = 0.65  # (see derive_consensus)
+	pThreshold      = 0.75  # (see derive_consensuses)
+	winnerThreshold = 0.65  # (see derive_consensuses)
 	headLimit       = None
 	requireEof      = True
 	debug           = []
@@ -95,9 +97,17 @@ def main():
 		# derive consensus; this can actually be a set of more than one
 		# candidate
 
-		seqChunks = chunkify(a.motif,motifText,seqText)
+		seqChunks   = chunkify(a.motif,motifText,seqText)
 
-		consensuses = list(derive_consensus(seqChunks,winnerThreshold=winnerThreshold))
+
+		if ("consensus" in debug):
+			print >>stderr
+			print >>stderr, "%d score=%d" % (a.lineNumber,a.score)
+
+		consensuses = derive_consensuses(seqChunks,
+		                                 expectedMotif=a.motif,pThreshold=pThreshold,
+		                                 winnerThreshold=winnerThreshold)
+		consensuses = list(consensuses)
 
 		# discard the alignment if it meets the filtering criterion (if there
 		# is any such criterion)
@@ -248,13 +258,15 @@ def position_in_motif(motif,text):
 	return (0,"+")
 
 
-# derive_consensus--
+# derive_consensuses--
 #	Yields a series of potential consensus motifs for a given alignment. The
 #	input is a list of sublists (as created by chunkify).  Each sublist is as
 #	long as the motif, consisting of the string (the nt or nts) matched to each
 #	position in the motif.
 
-def derive_consensus(seqChunks,winnerThreshold=0):
+def derive_consensuses(seqChunks,
+                       expectedMotif=None,pThreshold=0.75,
+                       winnerThreshold=0):
 	if (seqChunks == []): return
 	motifLen = len(seqChunks[0])
 
@@ -276,34 +288,76 @@ def derive_consensus(seqChunks,winnerThreshold=0):
 	# at each position, sort the tokens from most-observed to least-observed,
 	# then reduce them to best (or almost tied for best)
 
+	ixToWinners = {}
 	for motifIx in xrange(motifLen):
 		tokensSeen = ixToTokens[motifIx]
 		ixToTokens[motifIx] = [(ixToTokens[motifIx][seqNucs],seqNucs) for seqNucs in tokensSeen]
 		ixToTokens[motifIx].sort()
 		ixToTokens[motifIx].reverse()
-
 		tokensCount = sum([count for (count,_) in ixToTokens[motifIx]])
-		ixToTokens[motifIx] = [ixToTokens[motifIx][ix]
-		                         for (ix,(count,_)) in enumerate(ixToTokens[motifIx])
-		                         if (count >= winnerThreshold*tokensCount)]
 
 		if ("consensus" in debug):
+			s = []
 			for (count,seqNucs) in ixToTokens[motifIx]:
-				print >>stderr, "# [%d] %d \"%s\"" % (motifIx,count,seqNucs)
-			print >>stderr, "# %d" % bestCount
+				s += ["%d:\"%s\"" % (count,seqNucs)]
+			print >>stderr, "# [%d] tokensCount=%d %s" % \
+			                (motifIx,tokensCount," ".join(s))
+
+		ixToWinners[motifIx] = [ixToTokens[motifIx][ix]
+		                          for (ix,(count,_)) in enumerate(ixToTokens[motifIx])
+		                          if (count >= winnerThreshold*tokensCount)]
+
+	# determine whether the 'expected' consensus is sufficiently represented
+	# in the observations
+
+	motifsReported = set()
+
+	if (expectedMotif != None):
+		logOfP = 0.0
+		for (motifIx,expectedNuc) in enumerate(expectedMotif):
+			tokensSeen = {seqNucs:count for (count,seqNucs) in ixToTokens[motifIx]}
+			if (expectedNuc not in tokensSeen):
+				logOfP = None
+				if ("consensus" in debug):
+					print >>stderr, "# %s p%d=%d/%d=%.3f" % \
+					                (expectedNuc,motifIx,0,float(tokensCount),0)
+				break
+
+			tokensCount = sum([tokensSeen[count] for count in tokensSeen])
+			logOfP += log(tokensSeen[expectedNuc] / float(tokensCount))
+
+			if ("consensus" in debug):
+				print >>stderr, "# %s p%d=%d/%d=%.3f log=%.3f" % \
+				                (expectedNuc,
+				                 motifIx,tokensSeen[expectedNuc],float(tokensCount),
+				                 tokensSeen[expectedNuc] / float(tokensCount),
+				                 log(tokensSeen[expectedNuc] / float(tokensCount)))
+
+	if (logOfP != None):
+		if ("consensus" in debug):
+			print >>stderr, "# logOfP=%.3f avg=%.3f avgP=%.3f" % \
+			                (logOfP,logOfP/motifLen,exp(logOfP/motifLen))
+		if (logOfP >= motifLen*log(pThreshold)):
+			# exp(logOfP/motifLen) >= pThreshold
+			yield expectedMotif
+			motifsReported.add(expectedMotif)
 
 	# generate the possible consensus motifs
 	# $$$ change this to include the almost-tied ones
 
-	motif = []
-	for motifIx in xrange(motifLen):
-		tokensSeen = ixToTokens[motifIx]
-		if (tokensSeen == []):   # (no consensus can be formed, because nothing
-			return               #  .. in this column is a clear winner)
-		(_,bestSeqNucs) = tokensSeen[0]
-		motif += [bestSeqNucs]
+	if (winnerThreshold != None):
+		motif = []
+		for motifIx in xrange(motifLen):
+			tokensSeen = ixToWinners[motifIx]
+			if (tokensSeen == []):   # (no consensus can be formed, because nothing
+				return               #  .. in this column is a clear winner)
+			(_,bestSeqNucs) = tokensSeen[0]
+			motif += [bestSeqNucs]
+		motif = "".join(motif)
 
-	yield "".join(motif)
+		if (motif not in motifsReported):
+			yield motif
+			motifsReported.add(motif)
 
 
 if __name__ == "__main__": main()
