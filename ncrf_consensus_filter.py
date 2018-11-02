@@ -59,6 +59,10 @@ def main():
 			filterToKeep    = "no filter"
 			reportMsa       = True
 			reportConsensus = True
+		elif (arg.startswith("--p=")):   # (unadvertised)
+			pThreshold = parse_probability(argVal)
+		elif (arg == "--nop"):   # (unadvertised)
+			pThreshold = None
 		elif (arg.startswith("--winner=")):   # (unadvertised)
 			winnerThreshold = parse_probability(argVal)
 		elif (arg.startswith("--head=")):
@@ -104,9 +108,14 @@ def main():
 			print >>stderr
 			print >>stderr, "%d score=%d" % (a.lineNumber,a.score)
 
-		consensuses = derive_consensuses(seqChunks,
-		                                 expectedMotif=a.motif,pThreshold=pThreshold,
-		                                 winnerThreshold=winnerThreshold)
+		if (pThreshold != None):
+			consensuses = derive_consensuses(seqChunks,
+			                                 expectedMotif=a.motif,pThreshold=pThreshold,
+			                                 winnerThreshold=winnerThreshold)
+		else:
+			consensuses = derive_consensuses(seqChunks,
+			                                 winnerThreshold=winnerThreshold)
+
 		consensuses = list(consensuses)
 
 		# discard the alignment if it meets the filtering criterion (if there
@@ -309,8 +318,15 @@ def derive_consensuses(seqChunks,
 
 	# determine whether the 'expected' consensus is sufficiently represented
 	# in the observations
+	#
+	# at each position i, some fraction p_i of the tokens matches the expected
+	# motif; we compute the (geometric) average of p_i over all positions; if
+	# that average is above a given threshold, we report the expected motif as
+	# a consensus
 
 	motifsReported = set()
+
+	logOfP = None
 
 	if (expectedMotif != None):
 		logOfP = 0.0
@@ -343,7 +359,13 @@ def derive_consensuses(seqChunks,
 			motifsReported.add(expectedMotif)
 
 	# generate the possible consensus motifs
-	# $$$ change this to include the almost-tied ones
+	#
+	# at each position i, we previously determined which token (or tokens) is
+	# a clear winner; here we just catenate all these winners to form the
+	# consensus; if any position fails to have a winner we report no consensus
+	#
+	# $$$ change this to include positions that have more than one winner,
+	#     reporting all possible paths through the winners list
 
 	if (winnerThreshold != None):
 		motif = []
