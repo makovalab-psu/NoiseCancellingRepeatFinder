@@ -279,7 +279,7 @@ def derive_consensuses(seqChunks,winnerThreshold=0.50):
 				ixToTokens[motifIx][seqNucs] += 1
 
 	# at each position, sort the tokens from most-observed to least-observed,
-	# then reduce them to best (or almost tied for best)
+	# then reduce them to best (or almost best)
 
 	ixToWinners = {}
 	for motifIx in xrange(motifLen):
