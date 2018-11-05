@@ -318,7 +318,7 @@ def derive_consensuses(seqChunks,winnerThreshold=0.50):
 			if (tokensSeen == []):   # (no consensus can be formed, because nothing
 				return               #  .. in this column is a clear winner)
 			(_,bestSeqNucs) = tokensSeen[0]
-			motif += [bestSeqNucs]
+			if (bestSeqNucs != "-"): motif += [bestSeqNucs]
 		motif = "".join(motif)
 
 		if (motif not in motifsReported):
