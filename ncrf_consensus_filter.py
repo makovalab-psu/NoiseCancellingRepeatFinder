@@ -29,7 +29,7 @@ def main():
 	filterToKeep    = "consensus"
 	reportConsensus = False
 	reportMsa       = False
-	winnerThreshold = 0.65  # (see derive_consensuses)
+	winnerThreshold = 0.50  # (see derive_consensuses)
 	headLimit       = None
 	requireEof      = True
 	debug           = []
@@ -58,7 +58,7 @@ def main():
 			filterToKeep    = "no filter"
 			reportMsa       = True
 			reportConsensus = True
-		elif (arg.startswith("--winner=")):   # (unadvertised)
+		elif (arg.startswith("--winner=")) or (arg.startswith("W=")):   # (unadvertised)
 			winnerThreshold = parse_probability(argVal)
 		elif (arg.startswith("--head=")):
 			headLimit = int_with_unit(argVal)
