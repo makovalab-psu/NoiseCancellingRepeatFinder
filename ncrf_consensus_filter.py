@@ -22,6 +22,8 @@ usage: ncrf_cat <output_from_NCRF> | ncrf_consensus_filter [options]
 
 
 def main():
+	global headLimit,requireEof
+	global winnerThreshold,filterToKeep,reportConsensus,reportMsa
 	global debug
 
 	# parse the command line
@@ -30,6 +32,7 @@ def main():
 	reportConsensus = False
 	reportMsa       = False
 	winnerThreshold = 0.50  # (see derive_consensuses)
+	sliceWidth      = None
 	headLimit       = None
 	requireEof      = True
 	debug           = []
@@ -38,11 +41,11 @@ def main():
 		if ("=" in arg):
 			argVal = arg.split("=",1)[1]
 
-		if (arg == "--nonconsensus"):   # (unadvertised)
+		if (arg == "--nonconsensus"):             # (unadvertised)
 			filterToKeep    = "non consensus"
 			reportMsa       = False
 			reportConsensus = True
-		elif (arg == "--nonconsensus,msa"):   # (unadvertised)
+		elif (arg == "--nonconsensus,msa"):       # (unadvertised)
 			filterToKeep    = "non consensus"
 			reportMsa       = True
 			reportConsensus = True
@@ -50,16 +53,18 @@ def main():
 			filterToKeep    = "no filter"
 			reportMsa       = False
 			reportConsensus = True
-		elif (arg == "--filter,consensus"):   # (unadvertised)
+		elif (arg == "--filter,consensus"):       # (unadvertised)
 			filterToKeep    = "consensus"
 			reportMsa       = False
 			reportConsensus = True
-		elif (arg == "--msa"):   # (unadvertised)
+		elif (arg == "--msa"):                    # (unadvertised)
 			filterToKeep    = "no filter"
 			reportMsa       = True
 			reportConsensus = True
 		elif (arg.startswith("--winner=")) or (arg.startswith("W=")):   # (unadvertised)
 			winnerThreshold = parse_probability(argVal)
+		elif (arg.startswith("--slice=")):        # (unadvertised)
+			sliceWidth = int_with_unit(argVal)
 		elif (arg.startswith("--head=")):
 			headLimit = int_with_unit(argVal)
 		elif (arg in ["--noendmark","--noeof","--nomark"]):   # (unadvertised)
@@ -75,9 +80,16 @@ def main():
 
 	# process the alignments
 
+	if (sliceWidth == None):
+		simple_consensus_filter(stdin)
+	else:
+		sliced_consensus_filter(stdin,sliceWidth)
+
+
+def simple_consensus_filter(f):
 	alignmentNum = 0
 	alignmentsWritten = 0
-	for a in alignments(stdin,requireEof):
+	for a in alignments(f,requireEof):
 		alignmentNum += 1 
 
 		if (headLimit != None) and (alignmentNum > headLimit):
@@ -93,11 +105,9 @@ def main():
 			motifText = reverse_complement(motifText)
 			seqText   = reverse_complement(seqText)
 
-		# derive consensus; this can actually be a set of more than one
-		# candidate
+		# derive consensus(es)
 
-		seqChunks   = chunkify(a.motif,motifText,seqText)
-
+		seqChunks = chunkify(a.motif,motifText,seqText)
 
 		if ("consensus" in debug):
 			print >>stderr
@@ -155,6 +165,89 @@ def main():
 					else:
 						line += [seqNucs.ljust(positionLength[motifIx],".")]
 				print "# msa.seq   %s" % "".join(line)
+
+	if (requireEof):
+		print "# ncrf end-of-file"
+
+
+def sliced_consensus_filter(f,sliceWidth):
+	if (reportMsa):
+		print >>stderr, "WARNING: sliced consensus doesn't report MSA, ignoring that request"
+
+	alignmentNum = 0
+	alignmentsWritten = 0
+	for a in alignments(f,requireEof):
+		alignmentNum += 1 
+
+		if (headLimit != None) and (alignmentNum > headLimit):
+			print >>stderr, "limit of %d alignments reached" % headLimit
+			break
+
+		motifText = a.motifText
+		seqText   = a.seqText
+		if ("noflip" in debug):
+			pass
+		elif (a.strand == "-") and (a.start < a.end):
+			# alignment was reported in reverse complement of motif, so flip it
+			motifText = reverse_complement(motifText)
+			seqText   = reverse_complement(seqText)
+
+		# look for consensus over each slice, separately
+		# $$$ we may want overlapping slices
+		# $$$ need to figure out how we should handle the short slice at end
+
+		consensuses = set()
+
+		for sliceStart in xrange(0,len(motifText),sliceWidth):
+			motifTextSlice = motifText[sliceStart:sliceStart+sliceWidth]
+			seqTextSlice   = seqText  [sliceStart:sliceStart+sliceWidth]
+
+			# derive consensus(es)
+
+			seqChunks = chunkify(a.motif,motifText,seqText)
+
+			if ("consensus" in debug):
+				print >>stderr
+				print >>stderr, "%d score=%d slice.start=%d" \
+				              % (a.lineNumber,sliceStart,a.score)
+
+			sliceConsensuses = derive_consensuses(seqChunks,winnerThreshold=winnerThreshold)
+			sliceConsensuses = set(sliceConsensuses)
+			# consensuses.union(sliceConsensuses)
+			for word in sliceConsensuses:
+				consensuses.add(word)
+
+			if ("consensus" in debug):
+				for word in sliceConsensuses:
+					print >>stderr, "consensus %s" % word
+
+		consensuses = list(consensuses)
+
+		# discard the alignment if it meets the filtering criterion (if there
+		# is any such criterion)
+
+		if (filterToKeep == "consensus"):
+			if (a.motif not in consensuses): continue  # (discard it)
+		elif (filterToKeep == "non consensus"):
+			if (a.motif in consensuses): continue  # (discard it)
+		else: # if (filterToKeep == "no filter"):
+			pass
+
+		# copy the (unfiltered) alignment to the output
+
+		if (alignmentsWritten > 0): print
+		alignmentsWritten += 1
+
+		print "\n".join(a.lines)
+
+		# report the consensus, if we're supposed to
+
+		if (reportConsensus):
+			if (consensuses == []):
+				print "# consensus (none)"
+			else:
+				for word in consensuses:
+					print "# consensus %s" % word
 
 	if (requireEof):
 		print "# ncrf end-of-file"
