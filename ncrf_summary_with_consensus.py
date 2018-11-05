@@ -17,6 +17,11 @@ usage: ncrf_cat <output_from_NCRF> | ncrf_summary_with_consensus [options]
                        expressed as a percentage (e.g. "85%")
   --maxnoise=<ratio>   (same as --minmratio but with 1-ratio)
 
+The input alignments must include consensus information. This can be
+accomplished by ncrf_consensus_filter's --consensusonly option.
+
+The output is similar to that of ncrf_summary, but the error stats are replaced
+by a "consensus" column.
 
 Typical output:
   #line motif seq        start end  strand seqLen querybp consensus
