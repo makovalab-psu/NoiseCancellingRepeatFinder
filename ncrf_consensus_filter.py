@@ -246,8 +246,7 @@ def sliced_consensus_filter(f,sliceWidth):
 			if (consensuses == []):
 				print "# consensus (none)"
 			else:
-				for word in consensuses:
-					print "# consensus %s" % word
+				print "# consensus %s" % ",".join(consensuses)
 
 	if (requireEof):
 		print "# ncrf end-of-file"
