@@ -6,7 +6,7 @@ has a consensus different than the motif unit.
 
 from sys        import argv,stdin,stdout,stderr,exit
 from math       import log,exp
-from ncrf_parse import alignments,reverse_complement,parse_probability,int_with_unit
+from ncrf_parse import alignments,reverse_complement,canonical_motif,parse_probability,int_with_unit
 
 
 def usage(s=None):
@@ -24,7 +24,10 @@ usage: ncrf_cat <output_from_NCRF> | ncrf_consensus_filter [options]
 def main():
 	global headLimit,requireEof
 	global winnerThreshold,filterToKeep,reportConsensus,reportMsa
+	global canonicalizeConsensuses
 	global debug
+
+	canonicalizeConsensuses = True
 
 	# parse the command line
 
@@ -133,14 +136,21 @@ def simple_consensus_filter(f):
 
 		print "\n".join(a.lines)
 
-		# report the consensus and msa, if we're supposed to
+		# report the consensus, if we're supposed to
 
 		if (reportConsensus):
 			if (consensuses == []):
 				print "# consensus (none)"
 			else:
-				for word in consensuses:
-					print "# consensus %s" % word
+				canonicalized = []
+				for motif in consensuses:
+					if (motif != a.motif) and (canonicalizeConsensuses):
+						(motif,strand) = canonical_motif(motif)
+					canonicalized += [motif]
+				print "# consensus %s" % ",".join(canonicalized)
+
+		# report the MSA from which the consensus was derived, if we're
+		# supposed to
 
 		if (reportMsa):
 			motifLen = len(a.motif)
@@ -246,7 +256,12 @@ def sliced_consensus_filter(f,sliceWidth):
 			if (consensuses == []):
 				print "# consensus (none)"
 			else:
-				print "# consensus %s" % ",".join(consensuses)
+				canonicalized = []
+				for motif in consensuses:
+					if (motif != a.motif) and (canonicalizeConsensuses):
+						(motif,strand) = canonical_motif(motif)
+					canonicalized += [motif]
+				print "# consensus %s" % ",".join(canonicalized)
 
 	if (requireEof):
 		print "# ncrf end-of-file"

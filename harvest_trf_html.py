@@ -4,10 +4,11 @@ Convert alignments from TRF (Tandem Repeat Finder) html output to a tabular
 text format similar to an NcRF summary.
 """
 
-from sys    import argv,stdin,stdout,stderr,exit
-from os     import path as os_path
-from re     import compile as re_compile
-from string import maketrans
+from sys        import argv,stdin,stdout,stderr,exit
+from os         import path as os_path
+from re         import compile as re_compile
+from string     import maketrans
+from ncrf_parse import canonical_motif
 
 class Alignment: pass
 
@@ -536,29 +537,6 @@ def extract_events(a):
 			prevEvent = "mm"
 
 	return (nMatch,nMismatch,nInsO,nInsX,nDelO,nDelX)
-
-
-# canonical_motif--
-
-def canonical_motif(s):
-	(minNucs,strand) = (s,"+")
-	rev = reverse_complement(s)
-	if (rev < minNucs): (minNucs,strand) = (rev,"-")
-	for rotIx in xrange(1,len(s)):
-		rotNucs = s[rotIx:] + s[:rotIx]
-		if (rotNucs < minNucs): (minNucs,strand) = (rotNucs,"+")
-		rotNucs = rev[rotIx:] + rev[:rotIx]
-		if (rotNucs < minNucs): (minNucs,strand) = (rotNucs,"-")
-	return (minNucs,strand)
-
-
-# reverse_complement--
-
-complementMap = maketrans("ACGTSWRYMKBDHVNacgtswrymkbdhvn",
-                          "TGCASWYRKMVHDBNtgcaswyrkmvhdbn")
-
-def reverse_complement(nukes):
-	return nukes[::-1].translate(complementMap)
 
 
 if __name__ == "__main__": main()

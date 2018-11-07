@@ -319,6 +319,20 @@ def reverse_complement(nukes):
 	return nukes[::-1].translate(complementMap)
 
 
+# canonical_motif--
+
+def canonical_motif(s):
+	(minNucs,strand) = (s,"+")
+	rev = reverse_complement(s)
+	if (rev < minNucs): (minNucs,strand) = (rev,"-")
+	for rotIx in xrange(1,len(s)):
+		rotNucs = s[rotIx:] + s[:rotIx]
+		if (rotNucs < minNucs): (minNucs,strand) = (rotNucs,"+")
+		rotNucs = rev[rotIx:] + rev[:rotIx]
+		if (rotNucs < minNucs): (minNucs,strand) = (rotNucs,"-")
+	return (minNucs,strand)
+
+
 # parse_probability--
 #	Parse a string as a probability
 
