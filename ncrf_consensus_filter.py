@@ -36,6 +36,7 @@ def main():
 	reportMsa       = False
 	winnerThreshold = 0.50  # (see derive_consensuses)
 	sliceWidth      = None
+	sliceStep       = None
 	headLimit       = None
 	requireEof      = True
 	debug           = []
@@ -67,7 +68,10 @@ def main():
 		elif (arg.startswith("--winner=")) or (arg.startswith("W=")):   # (unadvertised)
 			winnerThreshold = parse_probability(argVal)
 		elif (arg.startswith("--slice=")):        # (unadvertised)
-			sliceWidth = int_with_unit(argVal)
+			if ("by" in argVal):
+				(sliceWidth,sliceStep) = map(int_with_unit,argVal.split("by",1))
+			else:
+				sliceWidth = sliceStep = int_with_unit(argVal)
 		elif (arg.startswith("--head=")):
 			headLimit = int_with_unit(argVal)
 		elif (arg in ["--noendmark","--noeof","--nomark"]):   # (unadvertised)
@@ -86,8 +90,10 @@ def main():
 	if (sliceWidth == None):
 		simple_consensus_filter(stdin)
 	else:
-		sliced_consensus_filter(stdin,sliceWidth)
+		sliced_consensus_filter(stdin,sliceWidth,sliceStep)
 
+
+# simple_consensus_filter--
 
 def simple_consensus_filter(f):
 	alignmentNum = 0
@@ -180,9 +186,16 @@ def simple_consensus_filter(f):
 		print "# ncrf end-of-file"
 
 
-def sliced_consensus_filter(f,sliceWidth):
-	if (reportMsa):
+# sliced_consensus_filter--
+
+userHasBeenWarned = False
+
+def sliced_consensus_filter(f,sliceWidth,sliceStep):
+	global userHasBeenWarned
+
+	if (reportMsa) and (not userHasBeenWarned):
 		print >>stderr, "WARNING: sliced consensus doesn't report MSA, ignoring that request"
+		userHasBeenWarned = True
 
 	alignmentNum = 0
 	alignmentsWritten = 0
@@ -203,14 +216,19 @@ def sliced_consensus_filter(f,sliceWidth):
 			seqText   = reverse_complement(seqText)
 
 		# look for consensus over each slice, separately
-		# $$$ we may want overlapping slices
-		# $$$ need to figure out how we should handle the short slice at end
 
 		consensuses = set()
 
-		for sliceStart in xrange(0,len(motifText),sliceWidth):
-			motifTextSlice = motifText[sliceStart:sliceStart+sliceWidth]
-			seqTextSlice   = seqText  [sliceStart:sliceStart+sliceWidth]
+		numSlices = (len(motifText) - sliceWidth + sliceStep-1) / sliceStep
+		minSlice  = 10*len(a.motif)
+
+		for sliceNum in xrange(numSlices):
+			sliceStart = sliceNum * sliceStep
+			sliceEnd   = min(sliceStart+sliceWidth,len(motifText))
+			if (sliceEnd - sliceStart < minSlice): break
+
+			motifTextSlice = motifText[sliceStart:sliceEnd]
+			seqTextSlice   = seqText  [sliceStart:sliceEnd]
 
 			# derive consensus(es)
 
@@ -218,8 +236,8 @@ def sliced_consensus_filter(f,sliceWidth):
 
 			if ("consensus" in debug):
 				print >>stderr
-				print >>stderr, "%d score=%d slice.start=%d" \
-				              % (a.lineNumber,sliceStart,a.score)
+				print >>stderr, "%d score=%d slice.start=%d slice.end=%d" \
+				              % (a.lineNumber,a.score,sliceStart,sliceEnd)
 
 			sliceConsensuses = derive_consensuses(seqChunks,winnerThreshold=winnerThreshold)
 			sliceConsensuses = set(sliceConsensuses)
