@@ -31,7 +31,10 @@ replaced by "overlaps").
 The alignment summaries are usually the output from ncrf_summary. Any file may
 contain alignments for more than one motif.
 
-Typical input file:
+A typical input file is shown below. However, we do not interpret any columns
+other than motif, seq, start, and end. This allows, for example, the output
+from ncrf_summary_with_consensus.
+
   #line motif seq        start end  strand seqLen querybp mRatio m    mm  i  d
   1     GGAAT FAB41174_6 1568  3021 -      3352   1461    82.6%  1242 169 42 50
   11    GGAAT FAB41174_2 3908  5077 -      7347   1189    82.4%  1009 125 35 55
@@ -227,9 +230,9 @@ def read_summary(f,filename=None):
 			continue
 
 		fields = line.split()
-		if (len(fields) != 13):
-			exit("%s: wrong number of columns at line %d (%d, expected %d)\n%s"
-			   % (os_path.basename(argv[0]),lineNumber,len(fields),13,line))
+		if (len(fields) < 5):
+			exit("%s: not enough columns at line %d (%d, expected at least %d)\n%s"
+			   % (os_path.basename(argv[0]),lineNumber,len(fields),5,line))
 
 		s = Summary()
 		s.filename   = filename
@@ -242,14 +245,14 @@ def read_summary(f,filename=None):
 			s.seq     = fields[2]
 			s.start   = int(fields[3])
 			s.end     = int(fields[4])
-			s.strand  = fields[5]
-			s.seqLen  = int(fields[6])
-			s.querybp = int(fields[7])
-			s.mRatio  = fields[8]
-			s.m       = int(fields[9])
-			s.mm      = int(fields[10])
-			s.i       = int(fields[11])
-			s.d       = int(fields[12])
+			#s.strand  = fields[5]
+			#s.seqLen  = int(fields[6])
+			#s.querybp = int(fields[7])
+			#s.mRatio  = fields[8]
+			#s.m       = int(fields[9])
+			#s.mm      = int(fields[10])
+			#s.i       = int(fields[11])
+			#s.d       = int(fields[12])
 		except ValueError:
 			assert (False), "bad alignment summary line (%d in %s): %s" \
 			              % (lineNumber,filename,line)
@@ -260,19 +263,19 @@ def read_summary(f,filename=None):
 			assert (False), "bad alignment summary line (bad interval at %d in %s): %s" \
 			              % (lineNumber,filename,line)
 
-		try:
-			if (s.strand not in ["+","-"]): raise ValueError
-		except ValueError:
-			assert (False), "bad alignment summary line (bad strand at %d in %s): %s" \
-			              % (lineNumber,filename,line)
+		#try:
+		#	if (s.strand not in ["+","-"]): raise ValueError
+		#except ValueError:
+		#	assert (False), "bad alignment summary line (bad strand at %d in %s): %s" \
+		#	              % (lineNumber,filename,line)
 
-		try:
-			if (not s.mRatio.endswith("%")): raise ValueError
-			s.mRatio = float(s.mRatio[:-1]) / 100
-			if (not 0 <= s.mRatio <= 1): raise ValueError
-		except ValueError:
-			assert (False), "bad alignment summary line (bad mRatio at %d in %s): %s" \
-			              % (lineNumber,filename,line)
+		#try:
+		#	if (not s.mRatio.endswith("%")): raise ValueError
+		#	s.mRatio = float(s.mRatio[:-1]) / 100
+		#	if (not 0 <= s.mRatio <= 1): raise ValueError
+		#except ValueError:
+		#	assert (False), "bad alignment summary line (bad mRatio at %d in %s): %s" \
+		#	              % (lineNumber,filename,line)
 
 		yield s
 
