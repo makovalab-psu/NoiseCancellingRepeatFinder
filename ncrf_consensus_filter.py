@@ -219,7 +219,7 @@ def sliced_consensus_filter(f,sliceWidth,sliceStep):
 
 		consensuses = set()
 
-		numSlices = (len(motifText) - sliceWidth + sliceStep-1) / sliceStep
+		numSlices = (len(motifText) + sliceStep-1) / sliceStep  # (an overestimate)
 		minSlice  = 10*len(a.motif)
 
 		for sliceNum in xrange(numSlices):
@@ -232,7 +232,7 @@ def sliced_consensus_filter(f,sliceWidth,sliceStep):
 
 			# derive consensus(es)
 
-			seqChunks = chunkify(a.motif,motifText,seqText)
+			seqChunks = chunkify(a.motif,motifTextSlice,seqTextSlice)
 
 			if ("consensus" in debug):
 				print >>stderr
@@ -240,14 +240,16 @@ def sliced_consensus_filter(f,sliceWidth,sliceStep):
 				              % (a.lineNumber,a.score,sliceStart,sliceEnd)
 
 			sliceConsensuses = derive_consensuses(seqChunks,winnerThreshold=winnerThreshold)
-			sliceConsensuses = set(sliceConsensuses)
-			# consensuses.union(sliceConsensuses)
-			for word in sliceConsensuses:
-				consensuses.add(word)
-
-			if ("consensus" in debug):
+			sliceConsensuses = list(sliceConsensuses)
+			if (sliceConsensuses == []):
+				consensuses.add(None)
+			else:
 				for word in sliceConsensuses:
-					print >>stderr, "consensus %s" % word
+					consensuses.add(word)
+
+				if ("consensus" in debug):
+					for word in sliceConsensuses:
+						print >>stderr, "consensus %s" % word
 
 		consensuses = list(consensuses)
 
@@ -276,9 +278,12 @@ def sliced_consensus_filter(f,sliceWidth,sliceStep):
 			else:
 				canonicalized = []
 				for motif in consensuses:
+					if (motif == None): continue
 					if (motif != a.motif) and (canonicalizeConsensuses):
 						(motif,strand) = canonical_motif(motif)
 					canonicalized += [motif]
+				if (None in consensuses):
+					canonicalized += ["(none)"]
 				print "# consensus %s" % ",".join(canonicalized)
 
 	if (requireEof):
@@ -415,11 +420,14 @@ def derive_consensuses(seqChunks,winnerThreshold=0.50):
 		tokensCount = sum([count for (count,_) in ixToTokens[motifIx]])
 
 		if ("consensus" in debug):
+			(bestCount,_) = ixToTokens[motifIx][0]
 			s = []
 			for (count,seqNucs) in ixToTokens[motifIx]:
 				s += ["%d:\"%s\"" % (count,seqNucs)]
-			print >>stderr, "# [%d] tokensCount=%d %s" % \
-			                (motifIx,tokensCount," ".join(s))
+			print >>stderr, "# [%d]%s tokensCount=%d %s" % \
+			                (motifIx,
+			                 " !!!" if (bestCount < winnerThreshold*tokensCount) else "",
+			                 tokensCount," ".join(s))
 
 		ixToWinners[motifIx] = [ixToTokens[motifIx][ix]
 		                          for (ix,(count,_)) in enumerate(ixToTokens[motifIx])
