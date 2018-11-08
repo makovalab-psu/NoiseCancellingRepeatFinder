@@ -1,0 +1,13 @@
+# Compiled source #
+###################
+*.o
+*.pyc
+NCRF
+
+# Makefile variants #
+###################
+Makefile.*
+
+# OS generated files #
+######################
+.DS_Store
