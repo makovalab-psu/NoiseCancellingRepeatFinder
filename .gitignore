@@ -3,6 +3,7 @@
 *.o
 *.pyc
 NCRF
+NCRF.*
 
 # Makefile variants #
 ###################
