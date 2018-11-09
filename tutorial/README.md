@@ -115,6 +115,8 @@ motifs.
 
 #### (3) Filtering for error uniformity.
 
+_this section needs to be updated to use the consensus filter_
+
 Error_non_uniformity_filter.py is a post processor that automatically discards
 alignments like the one in the previous example. It performs a statistical
 test on the positional alignment stats and discards an alignment if the stats
