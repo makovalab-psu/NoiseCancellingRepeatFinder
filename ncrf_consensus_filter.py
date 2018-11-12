@@ -6,7 +6,8 @@ has a consensus different than the motif unit.
 
 from sys        import argv,stdin,stdout,stderr,exit
 from math       import log,exp
-from ncrf_parse import alignments,reverse_complement,canonical_motif,parse_probability,int_with_unit
+from ncrf_parse import alignments,reverse_complement,canonical_motif, \
+                       parse_probability,int_with_unit,commatize
 
 
 def usage(s=None):
@@ -15,14 +16,15 @@ usage: ncrf_cat <output_from_NCRF> | ncrf_consensus_filter [options]
   --consensusonly     just report the consensus motif(s) for each alignment,
                       instead of filtering; these are added to the alignment
                       file with a "# consensus" tag
-  --head=<number>     limit the number of input alignments"""
+  --head=<number>     limit the number of input alignments
+  --progress=<number> periodically report how many alignments we've tested"""
 
 	if (s == None): exit (message)
 	else:           exit ("%s\n%s" % (s,message))
 
 
 def main():
-	global headLimit,requireEof
+	global headLimit,reportProgress,requireEof
 	global winnerThreshold,filterToKeep,reportConsensus,reportMsa
 	global canonicalizeConsensuses
 	global debug
@@ -38,6 +40,7 @@ def main():
 	sliceWidth      = None
 	sliceStep       = None
 	headLimit       = None
+	reportProgress  = None
 	requireEof      = True
 	debug           = []
 
@@ -74,6 +77,8 @@ def main():
 				sliceWidth = sliceStep = int_with_unit(argVal)
 		elif (arg.startswith("--head=")):
 			headLimit = int_with_unit(argVal)
+		elif (arg.startswith("--progress=")):
+			reportProgress = int_with_unit(argVal)
 		elif (arg in ["--noendmark","--noeof","--nomark"]):   # (unadvertised)
 			requireEof = False
 		elif (arg == "--debug"):
@@ -100,6 +105,11 @@ def simple_consensus_filter(f):
 	alignmentsWritten = 0
 	for a in alignments(f,requireEof):
 		alignmentNum += 1 
+
+		if (reportProgress != None):
+			if (alignmentNum == 1) or (alignmentNum % reportProgress == 0):
+				print >>stderr, "progress: testing alignment %s" \
+				              % commatize(alignmentNum)
 
 		if (headLimit != None) and (alignmentNum > headLimit):
 			print >>stderr, "limit of %d alignments reached" % headLimit
@@ -201,6 +211,11 @@ def sliced_consensus_filter(f,sliceWidth,sliceStep):
 	alignmentsWritten = 0
 	for a in alignments(f,requireEof):
 		alignmentNum += 1 
+
+		if (reportProgress != None):
+			if (alignmentNum == 1) or (alignmentNum % reportProgress == 0):
+				print >>stderr, "progress: testing alignment %s" \
+				              % commatize(alignmentNum)
 
 		if (headLimit != None) and (alignmentNum > headLimit):
 			print >>stderr, "limit of %d alignments reached" % headLimit
