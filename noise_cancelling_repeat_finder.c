@@ -484,7 +484,7 @@ no_sequences:
 //----------
 
 static void  chastise         (const char* format, ...);
-static void  usage            (char* message);
+static void  usage            (int exitCode);
 static void  usage_scoring    (void);
 static void  usage_allocation (void);
 static void  usage_other      (void);
@@ -499,13 +499,11 @@ static void chastise (const char* format, ...)
 		vfprintf (stderr, format, args);
 	va_end (args);
 
-	usage (NULL);
+	usage (EXIT_FAILURE);
 	}
 
-static void usage (char* message)
+static void usage (int exitCode)
 	{
-	if (message != NULL) fprintf (stderr, "%s\n", message);
-
 	fprintf (stderr, "%s-- Noise Cancelling Repeat Finder, to find tandem repeats in noisy reads\n",
 	                  programName);
 	fprintf (stderr, "  (version %s.%s.%s %s)\n",
@@ -536,7 +534,7 @@ static void usage (char* message)
 	fprintf (stderr, "  The output is usually passed through a series of the ncrf_* post-processing\n");
 	fprintf (stderr, "  scripts.\n");
 
-	exit (EXIT_FAILURE);
+	exit (exitCode);
 	}
 
 
@@ -572,7 +570,7 @@ static void usage_scoring (void)
 	fprintf (stderr, "  longer than 2^32/M. For M=100 this is about 40 million. An M larger than 100\n");
 	fprintf (stderr, "  is unlikely to be necessary.\n");
 
-	exit (EXIT_FAILURE);
+	exit (EXIT_SUCCESS);
 	}
 
 
@@ -587,7 +585,7 @@ static void usage_allocation (void)
 	fprintf (stderr, "  --allocate:clump=<bytes>         suggest space for error clump data\n");
 	fprintf (stderr, "                                   structures\n");
 
-	exit (EXIT_FAILURE);
+	exit (EXIT_SUCCESS);
 	}
 
 
@@ -602,7 +600,7 @@ static void usage_other (void)
 	fprintf (stderr, "  --progress[=<n>]      report processing of every nth sequence\n");
 	fprintf (stderr, "  --version             report the program version and quit\n");
 
-	exit (EXIT_FAILURE);
+	exit (EXIT_SUCCESS);
 	}
 
 
@@ -1098,7 +1096,7 @@ static void parse_options (int _argc, char** _argv)
 			fprintf (stderr, "  built with gcc-%d.%d.%d \"%s\"\n",
 			                  __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__, __VERSION__);
 #endif
-			exit (EXIT_FAILURE);
+			exit (EXIT_SUCCESS);
 			}
 
 		// --help
@@ -1107,7 +1105,7 @@ static void parse_options (int _argc, char** _argv)
 		 || (strcmp (arg, "--h")    == 0)
 		 || (strcmp (arg, "-help")  == 0)
 		 || (strcmp (arg, "-h")     == 0))
-			usage(NULL);
+			usage(EXIT_SUCCESS);
 
 		if ((strcmp (arg, "--help=scoring") == 0)
 		 || (strcmp (arg, "--help:scoring") == 0)
