@@ -117,7 +117,7 @@ motifs.
 
 _this section needs to be updated to use the consensus filter_
 
-Error_non_uniformity_filter.py is a post processor that automatically discards
+ncrf_consensus_filter.py is a post processor that automatically discards
 alignments like the one in the previous example. It performs a statistical
 test on the positional alignment stats and discards an alignment if the stats
 are inconsistent with a uniform distribution across the motif positions.
@@ -130,7 +130,7 @@ non-uniformity filter.
       | ../NCRF GGAAT \
           --minlength=500 --maxnoise=20% \
           --stats=events --positionalevents \
-      | ../error_non_uniformity_filter.py \
+      | ../ncrf_consensus_filter.py \
       | ../ncrf_words.py --minwordratio=0 \
       | ../ncrf_sort.py --sortby=mratio \
       > example.filtered.ncrf
