@@ -2,6 +2,9 @@
 
 _add general description here_
 
+An experiment, demonstrating how these scripts go together, can be found at
+https://github.com/makovalab-psu/NoiseCancellingRepeatFinder/blob/master/experiments/common_length_distribution.sh
+
 #### Scripts to sample common read length distributions
 
 fasta_length_distribution-- Read a fasta file and report the distribution of
