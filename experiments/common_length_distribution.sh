@@ -19,26 +19,34 @@
 #
 # We use a logarithmic binning formula so longer lengths have much wider bins.
 # At length 400 the bin size is 5, while at length 300K bin it's about 10K.
+# This is accomplished using the formula bin=30.5*log(pos-250) and its inverse
+# pos=250+exp(bin/30.5). This binning function was determined by working
+# backwards from the stated bin sizes. The formula obviously cannot be applied
+# to lengths at or below 250, thus in this experiment we discard any lengths
+# below that limit (in fact, we use a higher limit, 375). 
 #
 # Note that we do not modify sequences. It's possible to achieve distribution
 # similarity by truncating some sequences, but we do not do that.
      
-# settings
+# binning formula
 
-minReadLen=375
+minReadLen=375                     # lengths shorter than this are ignored
 toBin="30.5*log(pos-250)"          # expression to map a length to its bin
 fromBin="250+exp(bin/30.5)"        # expression to map a bin to its length(s)
+
+# define the two sets; each set consists of several fasta files; here
+# we have two files in each set
 
 fastaSet1="SRR2036701 SRR2036850"  # for each name in these two lists, we have,
 fastaSet2="FAF01127 FAF01169"      # .. name.fa.gz; e.g. SRR2036701.fa.gz
 
 # programs used
 
-fasta_length_distribution="      ../fasta_length_distribution.py"
-bin_position_counts="            ../bin_position_counts.py"
-common_length_distribution="     ../common_length_distribution.py"
-make_length_distribution_spec="  ../make_length_distribution_spec.py"
-fasta_match_length_distribution="../fasta_match_length_distribution.py"
+fasta_length_distribution="      ../extra/common_length_distribution/fasta_length_distribution.py"
+bin_position_counts="            ../extra/common_length_distribution/bin_position_counts.py"
+common_length_distribution="     ../extra/common_length_distribution/common_length_distribution.py"
+make_length_distribution_spec="  ../extra/common_length_distribution/make_length_distribution_spec.py"
+fasta_match_length_distribution="../extra/common_length_distribution/fasta_match_length_distribution.py"
 
 #=== compute the sequence length distributions
 
