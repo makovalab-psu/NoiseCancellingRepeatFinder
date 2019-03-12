@@ -267,8 +267,8 @@ def main():
 		readNum += 1
 		if (reportProgress != None) \
 		   and ((readNum == 1) or (readNum % reportProgress == 0)):
-			print >>stderr, "progress: processing read %s (%s alignments reported so far)" \
-			              % (commatize(readNum),commatize(alignmentsReported))
+			print >>stderr, "progress: processing read #%s %s (%s alignments reported so far)" \
+			              % (commatize(readNum),readName,commatize(alignmentsReported))
 
 		if (readName not in readNameToCigar):
 			exit("%s: \"%s\" doesn't appear in \"%s\""
