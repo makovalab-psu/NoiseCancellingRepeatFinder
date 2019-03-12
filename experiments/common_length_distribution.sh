@@ -30,7 +30,7 @@
      
 # binning formula
 
-minReadLen=375                     # lengths shorter than this are ignored
+minReadLen=375                     # lengths shorter than this are discarded
 toBin="30.5*log(pos-250)"          # expression to map a length to its bin
 fromBin="250+exp(bin/30.5)"        # expression to map a bin to its length(s)
 
@@ -46,6 +46,7 @@ fasta_length_distribution="      ../extra/common_length_distribution/fasta_lengt
 bin_position_counts="            ../extra/common_length_distribution/bin_position_counts.py"
 common_length_distribution="     ../extra/common_length_distribution/common_length_distribution.py"
 make_length_distribution_spec="  ../extra/common_length_distribution/make_length_distribution_spec.py"
+spread_length_distribution="     ../spread_length_distribution.py"
 fasta_match_length_distribution="../extra/common_length_distribution/fasta_match_length_distribution.py"
 
 #=== compute the sequence length distributions
