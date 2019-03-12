@@ -44,7 +44,10 @@ usage: reconstruct_simulated_alignments [options]
                            (default is to report intervals on all chromosomes)
   --minlength=<bp>         discard alignments that aren't long enough on the;
                            genome
-                           (but default, we don't filter by length)
+                           (by default, we don't filter by length)
+  --noisygenome            tolerate *some* noise in the genome's repeat arrays
+                           (by default, we expect pristine repeat arrays in the
+                           genome)
   --progress=<number>      periodically report how many reads we've processed
 
 Given a genome and simulated reads sampled by ncrf_read_simulator, and the
@@ -80,6 +83,7 @@ def main():
 	motifs              = None
 	chromsOfInterest    = None
 	minLength           = None
+	noiselessGenome     = True
 	reportProgress      = None
 	nameFieldW          = 1
 	lengthFieldW        = 1
@@ -122,6 +126,8 @@ def main():
 				if (minLength == 0): minLength = None
 			except ValueError:
 				usage("bad length in \"%s\"" % arg)
+		elif (arg == "--noisygenome"):
+			noiselessGenome = False
 		elif (arg.startswith("--progress=")):
 			reportProgress = int_with_unit(argVal)
 		elif (arg.startswith("--fields=")) or (arg.startswith("F=")):
@@ -325,7 +331,8 @@ def main():
 						   % (os_path.basename(argv[0]),gText,realText))
 
 				if (motif != None):
-					positionalStats = positonal_stats(aSliced,motif,mStrand)
+					positionalStats = positonal_stats(aSliced,motif,mStrand,
+					                                  noiselessGenome=noiselessGenome)
 					print_positonal_stats(positionalStats)
 
 	readsF.close()
@@ -692,7 +699,7 @@ def slice_alignment(a,gStart,gEnd):
 
 # positonal_stats--
 
-def positonal_stats(a,motif,mStrand):
+def positonal_stats(a,motif,mStrand,noiselessGenome=True):
 	motifLen = len(motif)
 
 	if (mStrand == a.strand):
@@ -704,7 +711,10 @@ def positonal_stats(a,motif,mStrand):
 
 	if (len(gNucs) >= 2*len(motif)-1):
 		offset = gNucs.find(motif)
-		assert (0 <= offset < motifLen)
+		if (noiselessGenome):
+			assert (0 <= offset < motifLen)
+		else:
+			assert (offset >= 0)   # $$$ what to do in this case???
 	elif (len(gNucs) >= motifLen):
 		offset = motifLen - (motif+motif).find(gNucs[:motifLen])
 		assert (1 <= offset <= motifLen)
