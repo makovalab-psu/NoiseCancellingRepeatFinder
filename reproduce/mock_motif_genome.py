@@ -228,9 +228,11 @@ def main():
 		numRepeats = 0
 		for (length,motif,_) in read_arrays(f,arraysFilename):
 			numRepeats += 1
-			motifs += [(motif)]
-			if (motif not in repeatLengths): repeatLengths[motif] =  [length]
-			else:                            repeatLengths[motif] += [length]
+			if (motif not in repeatLengths):
+				motifs += [(motif)]
+				repeatLengths[motif] =  [length]
+			else:
+				repeatLengths[motif] += [length]
 		f.close()
 
 		if (motifs == []):
@@ -317,13 +319,13 @@ def main():
 	else:
 		fillBp = sequenceLen - totalRepeatBp
 
-	positions = [randint(0,fillBp) for _ in xrange(numRepeats)]
-	positions.sort()
+	fillPositions = [randint(0,fillBp) for _ in xrange(numRepeats)]
+	fillPositions.sort()
 
 	if (minFill != None):
 		fillBp += minFill * (numRepeats+1)
 		for rptNum in xrange(numRepeats):
-			positions[rptNum] += (rptNum+1) * minFill
+			fillPositions[rptNum] += (rptNum+1) * minFill
 
 	# generate the sequence
 
@@ -336,7 +338,7 @@ def main():
 	seqPos  = 0
 	prevEnd = 0
 	fillPos = 0
-	for (ix,pos) in enumerate(positions):
+	for (ix,pos) in enumerate(fillPositions):
 		if (fillPos < pos):
 			seq += [fillSeq[fillPos:pos]]
 			seqPos  += pos - fillPos
