@@ -4,7 +4,7 @@ Create a mock genome (or a "read") with embedded repeat motifs.
 """
 
 from sys        import argv,stdin,stderr,exit
-from random     import seed as random_seed,randint,choice,random as unit_random
+from random     import seed as random_seed,randint,choice,random as unit_random,shuffle
 from copy       import deepcopy
 from echydna    import EchyDna,reverse_complement
 from ncrf_parse import int_with_unit,parse_probability
@@ -43,6 +43,12 @@ errorProfileNanoporeReadSim = {"mm":0.03,   "i":0.03,   "d":0.03  }
 def usage(s=None):
 	message = """
 usage: mock_motif_genome <motif> [options]
+  --arrays=<filename>      specific arrays to embed; each line is of the form
+                           <length> <motif>[<strand>]; <length> is in bp;
+                           <strand> is ignored;
+                           this cannot be used with any command line <motif>s,
+                           nor with --repeats, --lengths, --motif:neighbor, or
+                           --motif:mixture
   <motif>                  (cumulative) motif to embed
   --name=<string>          read name
   --length=<bp>       (L=) read length; if this is absent, the repeats will
@@ -90,10 +96,11 @@ def main():
 
 	# parse the command line
 
+	arraysFilename   = None
 	motifs          = []
 	sequenceName    = None
 	sequenceLen     = 0
-	numRepeats      = 1
+	numRepeats      = None
 	genNeighbors    = 0.0
 	genMixture      = 0.0
 	lengthsFilename = None
@@ -106,7 +113,9 @@ def main():
 		if ("=" in arg):
 			argVal = arg.split("=",1)[1]
 
-		if (arg.startswith("--name=")):
+		if (arg.startswith("--arrays=")):
+			arraysFilename = argVal
+		elif (arg.startswith("--name=")):
 			sequenceName = argVal
 		elif (arg.startswith("--length=")) or (arg.startswith("--len=")) or (arg.startswith("L=")):
 			if (argVal.endswith("%")):
@@ -191,30 +200,62 @@ def main():
 		else:
 			usage("unrecognized option: %s" % arg)
 
-	if (motifs == []):
+	if (arraysFilename != None):
+		if (motifs != []):
+			usage("command line <motif>s cannot be used with --arrays")
+		if (numRepeats != None):
+			usage("--repeats cannot be used with --arrays")
+		if (lengthsFilename != None):
+			usage("--lengths cannot be used with --arrays")
+		if (genNeighbors != 0.0):
+			usage("--motif:neighbor cannot be used with --arrays")
+		if (genMixture != 0.0):
+			usage("--motif:mixture cannot be used with --arrays")
+	elif (motifs == []):
 		usage("you have to give me at least one motif")
+
+	if (numRepeats == None) and (arraysFilename != None):
+		numRepeats = 1
+	
+	# read the arrays file, if we have one
+
+	repeatLengths = {}
+	haveSpecificArrays = False
+
+	if (arraysFilename != None):
+		haveSpecificArrays = True
+		f = file(arraysFilename,"rt")
+		numRepeats = 0
+		for (length,motif,_) in read_arrays(f,arraysFilename):
+			numRepeats += 1
+			motifs += [(motif)]
+			if (motif not in repeatLengths): repeatLengths[motif] =  [length]
+			else:                            repeatLengths[motif] += [length]
+		f.close()
+
+		if (motifs == []):
+			usage("array file \"%s\" contains no arrays" % arraysFilename)
 
 	# read the lengths file
 
-	repeatLengths = {}
-
-	if (lengthsFilename == None):
-		lengths = read_integers(stdin)
-		for motif in motifs:
-			repeatLengths[motif] = lengths
-	elif ("{motif}" not in lengthsFilename):
-		f = file(lengthsFilename,"rt")
-		lengths = read_integers(f,lengthsFilename)
-		f.close()
-		for motif in motifs:
-			repeatLengths[motif] = lengths
-	else:
-		for motif in motifs:
-			motifLengthsFilename = lengthsFilename.replace("{motif}",motif)
-			f = file(motifLengthsFilename,"rt")
-			lengths = read_integers(f,motifLengthsFilename)
+	if (repeatLengths == {}):
+		if (lengthsFilename == None):
+			lengths = read_integers(stdin)
+			for motif in motifs:
+				repeatLengths[motif] = lengths
+		elif ("{motif}" not in lengthsFilename):
+			f = file(lengthsFilename,"rt")
+			lengths = read_integers(f,lengthsFilename)
 			f.close()
-			repeatLengths[motif] = lengths
+			for motif in motifs:
+				repeatLengths[motif] = lengths
+		else:
+			for motif in motifs:
+				motifLengthsFilename = lengthsFilename.replace("{motif}",motif)
+				f = file(motifLengthsFilename,"rt")
+				lengths = read_integers(f,motifLengthsFilename)
+				f.close()
+				repeatLengths[motif] = lengths
 
 	# generate the number and type of motifs we'll embed
 	#
@@ -223,20 +264,29 @@ def main():
 	#       PRNG until after we've generated that sequence; see "point A" below
 
 	embeddings = []
-	for _ in xrange(numRepeats):
-		motif = choice(motifs)
-		length = choice(repeatLengths[motif])
-		u = unit_random()
-		if (genNeighbors > 0) and (u < genNeighbors):
-			motif = motif_neighbor(motif)
-			(mix,motif2) = (1.0,motif)
-		elif (genMixture > 0) and (u < genNeighbors+genMixture):
-			(mix,motif2) = (0.5,motif_neighbor(motif))
-		else:
-			(mix,motif2) = (1.0,motif)
-		strand = choice(["+","-"])
-		offset = choice(xrange(len(motif)))
-		embeddings += [(mix,motif,motif2,strand,offset,length)]
+
+	if (haveSpecificArrays):
+		for motif in motifs:
+			for length in repeatLengths[motif]:
+				strand = choice(["+","-"])
+				offset = choice(xrange(len(motif)))
+				embeddings += [(1.0,motif,motif,strand,offset,length)]
+		shuffle(embeddings)
+	else:
+		for _ in xrange(numRepeats):
+			motif = choice(motifs)
+			length = choice(repeatLengths[motif])
+			u = unit_random()
+			if (genNeighbors > 0) and (u < genNeighbors):
+				motif = motif_neighbor(motif)
+				(mix,motif2) = (1.0,motif)
+			elif (genMixture > 0) and (u < genNeighbors+genMixture):
+				(mix,motif2) = (0.5,motif_neighbor(motif))
+			else:
+				(mix,motif2) = (1.0,motif)
+			strand = choice(["+","-"])
+			offset = choice(xrange(len(motif)))
+			embeddings += [(mix,motif,motif2,strand,offset,length)]
 
 	totalRepeatBp = sum([length for (_,_,_,_,_,length) in embeddings])
 
@@ -495,6 +545,36 @@ def motif_neighbor(motif):
 		del newMotif[r]
 
 	return "".join(newMotif)
+
+
+# read_arrays--
+#	Yield the next (length,motif) pair from a file
+
+def read_arrays(f,filename=None):
+	if (filename == None): filename = "input"
+
+	lineNumber = 0
+	for line in f:
+		lineNumber += 1
+		line = line.strip("\n")
+		if (line == ""): continue
+
+		try:
+			fields = line.split(" ")
+			if (len(fields) != 2): raise ValueError
+			length = int(fields[0])
+			motif  = fields[1]
+			strand = None
+			if (motif.endswith("+")) or (motif.endswith("-")):
+				(motif,strand) = (motif[:-1],motif[-1])
+			if (motif == ""): raise ValueError
+			if (length < len(motif)): raise ValueError
+		except ValueError:
+			raise ValueError, \
+			      "bad array (line %d in %s):\n%s" \
+			    % (lineNumber,filename,line)
+
+		yield (length,motif,strand)
 
 
 # read_integers--
