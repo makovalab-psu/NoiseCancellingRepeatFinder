@@ -4,6 +4,7 @@ Resolve overlapping alignments of different motifs.
 """
 
 from sys        import argv,stdin,stdout,stderr,exit
+from gzip       import open as gzip_open
 from ncrf_parse import int_with_unit
 
 
@@ -87,7 +88,10 @@ def main():
 
 	summaryNum = 0
 	for filename in inputFilenames:
-		f = file(filename,"rt")
+		if (filename.endswith(".gz")) or (filename.endswith(".gzip")):
+			f = gzip_open(filename,"rt")
+		else:
+			f = file(filename,"rt")
 		for summary in read_summary(f,filename):
 			summaryNum += 1 
 

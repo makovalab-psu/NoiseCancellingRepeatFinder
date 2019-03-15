@@ -6,6 +6,7 @@ Concatenate several output files from Noise Cancelling Repeat Finder.
 from sys   import argv,stdin,stdout,stderr,exit
 from os    import path as os_path
 from errno import EPIPE
+from gzip  import open as gzip_open
 
 
 def usage(s=None):
@@ -56,7 +57,11 @@ def main():
 
 		eofMarkerSeen = False
 
-		f = file(filename,"rt")
+		if (filename.endswith(".gz")) or (filename.endswith(".gzip")):
+			f = gzip_open(filename,"rt")
+		else:
+			f = file(filename,"rt")
+
 		for line in f:
 			line = line.rstrip("\n")
 			if (eofMarkerSeen) and (line != ""):
