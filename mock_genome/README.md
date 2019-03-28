@@ -1,5 +1,8 @@
 # Noise Cancelling Repeat Finder &mdash; Mock Genomes
 
+_This directory is out of date, as "mock genome 3" is soon to be replaced by
+"mock hg38", but the latter is not yet described here._
+
 Simulated PacBio and Oxford Nanopore reads from fake genomes embedded with some
 tandem repeats.
 
