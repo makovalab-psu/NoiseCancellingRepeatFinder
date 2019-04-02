@@ -91,7 +91,19 @@ To feed to output from several runs of NCRF into a script, ncrf_cat is
 necessary (as opposed to the usual shell command "cat").
 
 ```bash  
-./ncrf_cat.py <file1> [<file2> ...]
+./ncrf_cat.py <file1> [<file2> ...] [--markend]
+  <file1>    an output file from Noise Cancelling Repeat Finder
+  <file2>    another output file from Noise Cancelling Repeat Finder
+  --markend  assume end-of-file markers are absent in the input, and add an
+             end-of-file marker to the output
+             (by default we require inputs to have proper end-of-file markers)
+
+Concatenate several output files from Noise Cancelling Repeat Finder.  This
+is little more than copying the files and adding a blank line between the
+files.
+
+It can also be used to verify that the input files contain end-of-file markers
+i.e. that they were not truncated when created.
 ```
 
 ncrf_consensus_filter-- Filter Noise Cancelling Repeat Finder alignments, discarding alignments that
@@ -183,7 +195,10 @@ replaced by "overlaps").
 The alignment summaries are usually the output from ncrf_summary. Any file may
 contain alignments for more than one motif.
 
-Typical input file:
+A typical input file is shown below. However, we do not interpret any columns
+other than motif, seq, start, and end. This allows, for example, the output
+from ncrf_summary_with_consensus.
+
   #line motif seq        start end  strand seqLen querybp mRatio m    mm  i  d
   1     GGAAT FAB41174_6 1568  3021 -      3352   1461    82.6%  1242 169 42 50
   11    GGAAT FAB41174_2 3908  5077 -      7347   1189    82.4%  1009 125 35 55
