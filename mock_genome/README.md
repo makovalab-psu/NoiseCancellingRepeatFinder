@@ -1,7 +1,7 @@
 # Noise Cancelling Repeat Finder &mdash; Mock Genomes
 
 _Note that the term "genome", when used herein, means "mock genome" unless
-state otherwise._
+stated otherwise._
 
 Simulated PacBio and Oxford Nanopore reads from mock genomes embedded with some
 tandem repeats.
