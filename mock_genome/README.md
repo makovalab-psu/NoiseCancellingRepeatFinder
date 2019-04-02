@@ -1,6 +1,9 @@
 # Noise Cancelling Repeat Finder &mdash; Mock Genomes
 
-Simulated PacBio and Oxford Nanopore reads from fake genomes embedded with some
+_Note that the term "genome", when used herein, means "mock genome" unless
+state otherwise._
+
+Simulated PacBio and Oxford Nanopore reads from mock genomes embedded with some
 tandem repeats.
 
 There are two genomes here. "Mock_hg38" mimics the distribution of repeat
@@ -9,18 +12,18 @@ arrays of a few specific motifs, and off-by-one motifs.
 
 # Mock hg38 Genome
 
-Tandem Repeat Finder was used to identify long near-perfect repeat arrays in\
+Tandem Repeat Finder was used to identify long near-perfect repeat arrays in
 hg38. The search was limited to the autosomes, chromosome X, and the non-PAR
-portion of chromosome Y. Motif length up to 200 bp were allowed. Arrays shorter
+portion of chromosome Y. Motif lengths up to 200 bp were allowed. Arrays shorter
 that 500 bp were ignored, as were any with more than than 5% mismatches or 1%
-indels. Overlapping arrays were also discarded.
+indels. Any remaining arrays that overlapped each other were discarded.
 
 A mock genome was then created, consisting of a mix of repeats and random
-sequence. The mock genome contained one repeat array for each array found in
+sequence. The genome contained one repeat array for each array found in
 the human reference, with a perfect repeat of the consensus for that array and
 length matching the discovered array. Repeats were positioned randomly across a
 single-sequence "genome", with a minimum separation of 500 bp between
-neighboring repeats. A repeat can begin anywhere within its repeated motif, and
+neighboring repeats. An array can begin anywhere within its repeated motif, and
 can appear as either forward or reverse complement.
 
 Total length of the genome is 1.4Mbp, of which 822Kbp is repeats, in 847 arrays.
@@ -32,10 +35,10 @@ same order as mock_hg38.truth.dat.
 
 Fake reads were sampled from this genome, separately simulating PacBio and
 Oxford Nanopore sequencing error profiles. The error profiles were derived from
-published alignments (details are, or will be, in the manuscript). For PacBio
-this was 1.7% mismatch rate, 8.9% single-base insertion, 4.3% single-base
-deletion. For Oxford Nanopore, this was 4.6% mismatch rate, 3.8% single-base
-insertion, 7.7% single-base deletion.
+published alignments (details are in the manuscript). For PacBio this was 1.7%
+mismatch rate, 8.9% single-base insertion, 4.3% single-base deletion. For
+Oxford Nanopore, this was 4.6% mismatch rate, 3.8% single-base insertion, 7.7%
+single-base deletion.
 
 Overall coverage (of the genome) is intended to be about 5X. Read lengths were
 pulled from a distribution with min=1K, max=20K, and mu=7,333 (the p.d.f. drops
@@ -83,7 +86,7 @@ elements with edit distance 1 from those -- these elements are intended as
 false positive bait for processes searching for the primary elements.
 
 Repeats were positioned randomly across a single-sequence "genome", with a
-minimum separation of 500 bp between neighboring repeats. A repeat can begin
+minimum separation of 500 bp between neighboring repeats. An array can begin
 anywhere within its repeated motif, and can appear as either forward or reverse
 complement.
 
