@@ -20,6 +20,12 @@ mock_motif_genome-- Create a mock genome (or a "read") with embedded repeat moti
 
 ```bash  
 ./mock_motif_genome.py <motif> [options]
+  --arrays=<filename>      specific arrays to embed; each line is of the form
+                           <length> <motif>[<strand>]; <length> is in bp;
+                           <strand> is ignored;
+                           this cannot be used with any command line <motif>s,
+                           nor with --repeats, --lengths, --motif:neighbor, or
+                           --motif:mixture
   <motif>                  (cumulative) motif to embed
   --name=<string>          read name
   --length=<bp>       (L=) read length; if this is absent, the repeats will
@@ -77,12 +83,12 @@ simulated reads sampled from the genome.
                            these intervals in the genome (format described
                            below)
   --catalog=<filename>     If this is provided, alignments are truncated to the
-                           repeat intervals given by the file, and positional
-                           match/mismatch/insert/delete counts are produced. 
-                           The format of the input file is the same as produced
-                           by mock_motif_genome's --catalog option; positional
-                           counts are the same as would be produced by NCRF's
-                           --positionalevents option
+						   repeat intervals given by the file, and positional
+						   match/mismatch/insert/delete counts are produced. 
+						   The format of the input file is the same as produced
+						   by mock_motif_genome's --catalog option; positional
+						   counts are the same as would be produced by NCRF's
+						   --positionalevents option
   --motif=<motif>          (cumulative) motifs of interest; alignments for other
                            motifs are discarded; requires --catalog, and the
                            motif must appear in the same orientation listed in
@@ -94,7 +100,10 @@ simulated reads sampled from the genome.
                            (default is to report intervals on all chromosomes)
   --minlength=<bp>         discard alignments that aren't long enough on the;
                            genome
-                           (but default, we don't filter by length)
+                           (by default, we don't filter by length)
+  --noisygenome            tolerate *some* noise in the genome's repeat arrays
+                           (by default, we expect pristine repeat arrays in the
+                           genome)
   --progress=<number>      periodically report how many reads we've processed
 
 Given a genome and simulated reads sampled by ncrf_read_simulator, and the
