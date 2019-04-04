@@ -308,13 +308,30 @@ def sliced_consensus_filter(f,sliceWidth,sliceStep):
 # chunkify--
 #	Returns a list of sublists. Each sublist is as long as the motif, consisting
 #	of the string (the nt or nts) matched to each position in the motif.
+#
+# Note: the caller should not depend on the order of the returned chunks
 
 def chunkify(motif,motifText,seqText):
 	motifText = motifText.upper()
 	motifLen  = len(motif)
-	(motifPos,direction) = position_in_motif(motif,motifText)
-	if ("motifpos" in debug):
-		print >>stderr, "motifPos=%d%s" % (motifPos,direction)
+
+	motifPosInfo = position_in_motif(motif,motifText)
+	if (motifPosInfo == None):
+		# no match found, just use position 0,forward, with the expectation
+		# that we the chunks we return won't produce a consensus
+		(motifPos,direction) = (0,"+")
+		if ("motifpos" in debug):
+			print >>stderr, "motifPos=%d%s (None)" % (motifPos,direction)
+	else:
+		(motifPos,direction) = motifPosInfo
+		if ("motifpos" in debug):
+			if (direction == "+"):
+				alignedMotif = motif[motifPos:] + motif[:motifPos]
+			else: # if (direction == "-"):
+				revMotif = reverse_complement(motif)
+				alignedMotif = revMotif[motifPos:] + revMotif[:motifPos]
+			print >>stderr, "motifPos=%d%s (%s)" \
+			              % (motifPos,direction,alignedMotif)
 
 	chunks = []
 	motifIx = motifPos
@@ -342,8 +359,9 @@ def chunkify(motif,motifText,seqText):
 		chunks += [chunk]
 
 	if (direction == "-"):
-		for chunk in chunks:
+		for (ix,chunk) in enumerate(chunks):
 			chunk.reverse()
+			chunks[ix] = map(tolerant_reverse_complement,chunk)
 
 	if ("chunks" in debug):
 		for (chunkIx,chunk) in enumerate(chunks):
@@ -357,6 +375,8 @@ def chunkify(motif,motifText,seqText):
 
 def position_in_motif(motif,text):
 	motifLen = len(motif)
+
+	# try matching in same orientation
 
 	for rotIx in xrange(motifLen):
 		rotMotif = motif[rotIx:] + motif[:rotIx]
@@ -375,6 +395,8 @@ def position_in_motif(motif,text):
 				break
 		if (isMatch):
 			return (rotIx,"+")
+
+	# try matching in reverse orientation
 
 	motif = reverse_complement(motif)
 	for rotIx in xrange(motifLen):
@@ -395,9 +417,9 @@ def position_in_motif(motif,text):
 		if (isMatch):
 			return (rotIx,"-")
 
-	# no match found, just report position 0,forward
+	# no match found
 
-	return (0,"+")
+	return None
 
 
 # derive_consensuses--
@@ -472,6 +494,13 @@ def derive_consensuses(seqChunks,winnerThreshold=0.50):
 		if (motif not in motifsReported):
 			yield motif
 			motifsReported.add(motif)
+
+
+# tolerant_reverse_complement--
+
+def tolerant_reverse_complement(nukes):
+	if (nukes == None): return None
+	return reverse_complement(nukes)
 
 
 if __name__ == "__main__": main()
