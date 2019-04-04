@@ -376,8 +376,8 @@ def position_in_motif(motif,text):
 		if (isMatch):
 			return (rotIx,"+")
 
-	motif = reverse_complement(motifLen)
-	for rotIx in xrange(motif):
+	motif = reverse_complement(motif)
+	for rotIx in xrange(motifLen):
 		rotMotif = motif[rotIx:] + motif[:rotIx]
 		pos = 0
 		motifIx = 0
