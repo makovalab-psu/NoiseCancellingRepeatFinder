@@ -1463,21 +1463,21 @@ static alignment best_alignment
 	aForward = noAlignment;
 	aReverse = noAlignment;
 	if (sequenceStrands != -1)
-		aForward = loop_align_segment (&control, seq->nt+start, end-start, m->forwardNucs);
-	if ((sequenceStrands != 1) && (m->reverseNucs != NULL))
-		aReverse = loop_align_segment (&control, seq->nt+start, end-start, m->reverseNucs);
-
-	if (dbgLoopAlign != 0)
 		{
-		if (aForward.active)
-			fprintf (stderr, "  alignment: %u-%u%c seqBp=%u qryBp=%u %u/%u/%u/%u %.2f%%\n",
-			                 start+aForward.seqStart, start+aForward.seqEnd, aForward.strand,
+		aForward = loop_align_segment (&control, seq->nt+start, end-start, m->forwardNucs);
+		if ((dbgLoopAlign != 0) && (aForward.active))
+			fprintf (stderr, "  alignment: %u-%u+ seqBp=%u qryBp=%u %u/%u/%u/%u %.2f%%\n",
+			                 start+aForward.seqStart, start+aForward.seqEnd,
 			                 aForward.seqBaseCount, aForward.qryBaseCount,
 			                 aForward.mCount, aForward.mmCount, aForward.iCount, aForward.dCount,
 			                 100*aForward.matchRatio);
-		if (aReverse.active)
-			fprintf (stderr, "  alignment: %u-%u%c seqBp=%u qryBp=%u %u/%u/%u/%u %.2f%%\n",
-			                 start+aReverse.seqStart, start+aReverse.seqEnd, aReverse.strand,
+		}
+	if ((sequenceStrands != 1) && (m->reverseNucs != NULL))
+		{
+		aReverse = loop_align_segment (&control, seq->nt+start, end-start, m->reverseNucs);
+		if ((dbgLoopAlign != 0) && (aReverse.active))
+			fprintf (stderr, "  alignment: %u-%u- seqBp=%u qryBp=%u %u/%u/%u/%u %.2f%%\n",
+			                 start+aReverse.seqStart, start+aReverse.seqEnd,
 			                 aReverse.seqBaseCount, aReverse.qryBaseCount,
 			                 aReverse.mCount, aReverse.mmCount, aReverse.iCount, aReverse.dCount,
 			                 100*aReverse.matchRatio);
