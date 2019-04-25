@@ -438,6 +438,12 @@ alignment loop_align_segment
 			print_debug_column (motif,dpColM,dpColI,dpColD,tbColM,tbColI,tbColD,seqNuc,colIx);
 		}
 
+	if (dbgLoopAlign != 0)
+		{
+		fprintf (stderr, "  DP matrix is filled\n");
+		fprintf (stderr, "  bestScore=%d at col=%u row=%u\n", bestScore, bestColIx, bestRowIx);
+		}
+
 	// if the best score isn't good enough, quit now;  otherwise we'll report
 	// the alignment
 
@@ -451,7 +457,6 @@ alignment loop_align_segment
 
 	seqTextHead = (char*) &control->seqText[control->textChars-1];  *seqTextHead = 0;
 	qryTextHead = (char*) &control->qryText[control->textChars-1];  *qryTextHead = 0;
-
 
 	colIx = endColIx = bestColIx;  startColIx = 0;
 	rowIx = endRowIx = bestRowIx;
@@ -488,6 +493,9 @@ alignment loop_align_segment
 		colIx = c;  rowIx = r;
 		}
 
+	if (dbgLoopAlign != 0)
+		fprintf (stderr, "  traceback complete\n");
+
 	seqTextScan = seqTextHead;    // the following loop is similar to
 	qryTextScan = qryTextHead;    // .. rescore_alignment()
 	a.mCount = a.mmCount = a.iCount = a.dCount = 0;
@@ -505,6 +513,9 @@ alignment loop_align_segment
 			a.mmCount++;
 			}
 		}
+
+	if (dbgLoopAlign != 0)
+		fprintf (stderr, "  event counting complete\n");
 
 	if (dbgLATraceback)
 		{
