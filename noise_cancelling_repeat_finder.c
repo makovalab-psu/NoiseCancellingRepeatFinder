@@ -567,7 +567,7 @@ static void usage_scoring (void)
 	fprintf (stderr, "  Mathematically, scaling all scores, including --minscore, by a constant\n");
 	fprintf (stderr, "  factor will produce equivalent alignment results. However, larger M shortens\n");
 	fprintf (stderr, "  the length susceptible to overflow. Overflow may occur if an alignment is\n");
-	fprintf (stderr, "  longer than 2^32/M. For M=100 this is about 40 million. An M larger than 100\n");
+	fprintf (stderr, "  longer than 2^31/M. For M=100 this is about 20 million. An M larger than 100\n");
 	fprintf (stderr, "  is unlikely to be necessary.\n");
 
 	exit (EXIT_SUCCESS);
@@ -1466,7 +1466,7 @@ static alignment best_alignment
 		{
 		aForward = loop_align_segment (&control, seq->nt+start, end-start, m->forwardNucs);
 		if ((dbgLoopAlign != 0) && (aForward.active))
-			fprintf (stderr, "  alignment: %u-%u+ seqBp=%u qryBp=%u %u/%u/%u/%u %.2f%%\n",
+			fprintf (stderr, "  alignment: %u-%u+ seqBp=%u qryBp=%u m=%u mm=%u i=%u d=%u %.2f%%\n",
 			                 start+aForward.seqStart, start+aForward.seqEnd,
 			                 aForward.seqBaseCount, aForward.qryBaseCount,
 			                 aForward.mCount, aForward.mmCount, aForward.iCount, aForward.dCount,
@@ -1476,7 +1476,7 @@ static alignment best_alignment
 		{
 		aReverse = loop_align_segment (&control, seq->nt+start, end-start, m->reverseNucs);
 		if ((dbgLoopAlign != 0) && (aReverse.active))
-			fprintf (stderr, "  alignment: %u-%u- seqBp=%u qryBp=%u %u/%u/%u/%u %.2f%%\n",
+			fprintf (stderr, "  alignment: %u-%u- seqBp=%u qryBp=%u m=%u mm=%u i=%u d=%u %.2f%%\n",
 			                 start+aReverse.seqStart, start+aReverse.seqEnd,
 			                 aReverse.seqBaseCount, aReverse.qryBaseCount,
 			                 aReverse.mCount, aReverse.mmCount, aReverse.iCount, aReverse.dCount,
