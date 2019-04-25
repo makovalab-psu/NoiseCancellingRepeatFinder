@@ -784,6 +784,14 @@ static void enough_cells
 
 		bytesNeeded = 3 * numCells * sizeof(dpcell)
 		            + 3 * numCells * sizeof(tbcell);
+
+		if (dbgLAAllocation)
+			{
+			fprintf (stderr, "for enough_cells(%s , %s)\n",ucommatize(queryLen),ucommatize(sequenceLen));
+			fprintf (stderr, "  numCells=0x%016lX %s\n",numCells,ucommatize(numCells));
+			fprintf (stderr, "  bytesNeeded=%016lX %s\n",bytesNeeded,ucommatize(bytesNeeded));
+			}
+
 		if (control->dp == NULL)
 			{
 			dp = malloc (bytesNeeded);
