@@ -568,7 +568,8 @@ static void usage_scoring (void)
 	fprintf (stderr, "  factor will produce equivalent alignment results. However, larger M shortens\n");
 	fprintf (stderr, "  the length susceptible to overflow. Overflow may occur if an alignment is\n");
 	fprintf (stderr, "  longer than 2^31/M. For M=100 this is about 20 million. An M larger than 100\n");
-	fprintf (stderr, "  is unlikely to be necessary.\n");
+	fprintf (stderr, "  is unlikely to be necessary. The same statements are true for MM, IO, IX, DO,\n");
+	fprintf (stderr, "  and DX\n");
 
 	exit (EXIT_SUCCESS);
 	}
