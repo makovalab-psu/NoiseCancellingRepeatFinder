@@ -1214,7 +1214,7 @@ static void parse_options (int _argc, char** _argv)
 		if (strcmp_prefix (arg, "--debug=loop_align:") == 0)
 			{
 			argVal2 = strchr(argVal,':') + 1;
-			dbgLoopAlign = string_to_u32 (argVal2);
+			dbgLoopAlign = string_to_unitized_u32 (argVal2, true /*units of 1,000*/);
 			goto next_arg;
 			}
 

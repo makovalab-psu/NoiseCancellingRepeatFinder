@@ -317,7 +317,7 @@ alignment loop_align_segment
 		seqNuc = toUpperACGTN(seq[colIx-1]);
 
 		if ((dbgLoopAlign != 0) && (colIx % dbgLoopAlign == 0))
-			fprintf (stderr, "  column [%d] %c\n", colIx, seqNuc);
+			fprintf (stderr, "  column [%s] %c\n", ucommatize(colIx), seqNuc);
 //		else if (dbgLAAllocation)
 //			{
 //			fprintf (stderr, "  column [%d] %c", colIx, seqNuc);
