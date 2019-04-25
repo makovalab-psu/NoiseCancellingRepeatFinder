@@ -1452,7 +1452,7 @@ static alignment best_alignment
 
 	if (dbgLoopAlign != 0)
 		{
-		u32 seqLen   = strlen((char*)seq);
+		u32 seqLen   = strlen((char*)seq->nt);
 		u32 motifLen = strlen((char*)m->forwardNucs);
 		fprintf (stderr, "best_alignment(seqlen_%u,%u-%u,motiflen_%u,min=%u\n",
 		                                 seqLen,start,end,motifLen,minLength);
