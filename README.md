@@ -15,11 +15,11 @@ programs to post-process the output.
 
 To install Noise Cancelling Repeat Finder using the source:  
 1. Download the latest stable version of Noise Cancelling Repeat Finder using
-Github (as of this writing, the latest stable version is v1.00.06)
+Github (as of this writing, the latest stable version is v1.00.06):
 ```bash  
      git clone --branch v1.00.06 https://github.com/makovalab-psu/NoiseCancellingRepeatFinder.git  
 ```  
-Or, you can download the latest release from the releases page
+Or, you can download the latest release from the releases page:
 ```bash  
     https://github.com/makovalab-psu/NoiseCancellingRepeatFinder/releases  
 ```
