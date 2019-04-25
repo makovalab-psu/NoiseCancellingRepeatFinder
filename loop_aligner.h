@@ -14,13 +14,13 @@
 // "deep link" control variable access
 
 #ifdef loop_aligner_owner
-int        dbgLoopAlign    = false;
+u32        dbgLoopAlign    = 0;
 int        dbgLAAllocation = false;
 int        dbgLACell       = false;
 int        dbgLAColumn     = false;
 int        dbgLATraceback  = false;
 #else
-global int dbgLoopAlign;
+global u32 dbgLoopAlign;
 global int dbgLAAllocation;
 global int dbgLACell;
 global int dbgLAColumn;

@@ -248,7 +248,7 @@ alignment loop_align_segment
 	char*		seqTextHead, *seqTextScan, *qryTextHead, *qryTextScan;
 	alignment	a;
 
-	if (dbgLoopAlign)
+	if (dbgLoopAlign != 0)
 		{
 		u32 motifLen = strlen((char*)motif);
 		fprintf (stderr, "loop_align_segment(");
@@ -299,7 +299,7 @@ alignment loop_align_segment
 	bestScore = 0;
 	bestColIx = bestRowIx = 0;
 
-	if (dbgLoopAlign)
+	if (dbgLoopAlign != 0)
 		fprintf (stderr, "  column [0]\n");
 
 	colIx = 0;
@@ -316,7 +316,7 @@ alignment loop_align_segment
 		{
 		seqNuc = toUpperACGTN(seq[colIx-1]);
 
-		if (dbgLoopAlign)
+		if ((dbgLoopAlign != 0) && (colIx % dbgLoopAlign == 0))
 			fprintf (stderr, "  column [%d] %c\n", colIx, seqNuc);
 //		else if (dbgLAAllocation)
 //			{

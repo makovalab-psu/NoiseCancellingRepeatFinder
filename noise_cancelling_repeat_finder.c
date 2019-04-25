@@ -1211,6 +1211,13 @@ static void parse_options (int _argc, char** _argv)
 		if (strcmp (arg, "--debug=loop_align") == 0)
 			{ dbgLoopAlign = true;  goto next_arg; }
 
+		if (strcmp_prefix (arg, "--debug=loop_align:") == 0)
+			{
+			argVal2 = strchr(argVal,':') + 1;
+			dbgLoopAlign = string_to_u32 (argVal2);
+			goto next_arg;
+			}
+
 		if (strcmp (arg, "--debug=allocation") == 0)
 			{ dbgAllocation = dbgLAAllocation = true;  goto next_arg; }
 
