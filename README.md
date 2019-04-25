@@ -26,6 +26,7 @@ Or, you can download the latest release from the releases page
 If you are adventurous and want to just try the latest stuff checked into the
 repository, then you probably know how to clone the repo (so I don't need to
 show you the command). Beware that it might not be stable.
+
 2. Compile:  
 ```bash  
     cd NoiseCancellingRepeatFinder  
