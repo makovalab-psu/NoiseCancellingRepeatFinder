@@ -249,7 +249,15 @@ alignment loop_align_segment
 	alignment	a;
 
 	if (dbgLoopAlign)
-		fprintf (stderr, "loop_align_segment(%s#%u,%s)\n", seq, seqLen, motif);
+		{
+		u32 motifLen = strlen((char*)motif);
+		fprintf (stderr, "loop_align_segment(");
+		if (seqLen   < 50) fprintf (stderr, "%s#%u", seq, seqLen);
+		              else fprintf (stderr, "seqlen_%u", seqLen);
+		if (motifLen < 50) fprintf (stderr, ",%s", motif);
+		              else fprintf (stderr, ",motiflen_%u", motifLen);
+		fprintf (stderr, ")\n");
+		}
 
 	m   = control->scoring.match;
 	mm  = control->scoring.mismatch;
