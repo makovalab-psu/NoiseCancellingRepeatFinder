@@ -1263,7 +1263,7 @@ static void parse_options (int _argc, char** _argv)
 		                 scoring.mismatch, scoring.iOpen+scoring.dOpen);
 		}
 
-	// copy debridging min length from regular min length, if necessary 
+	// copy debridging min length from regular min length, if necessary
 
 	if ((debridge) && (debridgeLength == 0))
 		debridgeLength = minLength;
@@ -1450,6 +1450,14 @@ static alignment best_alignment
 		dbgReportScoring = false;
 		}
 
+	if (dbgLoopAlign != 0)
+		{
+		u32 seqLen   = strlen((char*)seq);
+		u32 motifLen = strlen((char*)m->forwardNucs);
+		fprintf (stderr, "best_alignment(seqlen_%u,%u-%u,motiflen_%u,min=%u\n",
+		                                 seqLen,start,end,motifLen,minLength);
+		}
+
 	// try to align to both strands (or whichever strand we're interested in)
 
 	aForward = noAlignment;
@@ -1458,6 +1466,22 @@ static alignment best_alignment
 		aForward = loop_align_segment (&control, seq->nt+start, end-start, m->forwardNucs);
 	if ((sequenceStrands != 1) && (m->reverseNucs != NULL))
 		aReverse = loop_align_segment (&control, seq->nt+start, end-start, m->reverseNucs);
+
+	if (dbgLoopAlign != 0)
+		{
+		if (aForward.active)
+			fprintf (stderr, "  alignment: %u-%u%c seqBp=%u qryBp=%u %u/%u/%u/%u %.2f%%\n",
+			                 start+aForward.seqStart, start+aForward.seqEnd, aForward.strand,
+			                 aForward.seqBaseCount, aForward.qryBaseCount,
+			                 aForward.mCount, aForward.mmCount, aForward.iCount, aForward.dCount,
+			                 100*aForward.matchRatio);
+		if (aReverse.active)
+			fprintf (stderr, "  alignment: %u-%u%c seqBp=%u qryBp=%u %u/%u/%u/%u %.2f%%\n",
+			                 start+aReverse.seqStart, start+aReverse.seqEnd, aReverse.strand,
+			                 aReverse.seqBaseCount, aReverse.qryBaseCount,
+			                 aReverse.mCount, aReverse.mmCount, aReverse.iCount, aReverse.dCount,
+			                 100*aReverse.matchRatio);
+		}
 
 	// discard too-short alignments
 
@@ -1991,7 +2015,7 @@ static void report_debridged_alignment
 			}
 
 		// otherwise, the sub-alignment is long enough; if we're not removing
-		// error clumps, report it and move on to the next interval 
+		// error clumps, report it and move on to the next interval
 
 		if ((dbgDebridger) && (!dbgDebridgerDetail) && (dbgTriggerName == NULL) && (dbgTriggerCrc == 0))
 			fprintf (stderr, " stack     [%d] columns %d-%d"
