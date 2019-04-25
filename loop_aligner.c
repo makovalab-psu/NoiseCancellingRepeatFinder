@@ -229,7 +229,7 @@ alignment loop_align_segment
 	{
 	u32			m, mm, iop, iex, dop, dex;
 	u32			qryLen, motifStartIx, motifEndIx;
-	u32			numCells;
+	size_t		numCells;
 	dpcell*		dpM, *dpI, *dpD;
 	dpcell*		dpColM,  *dpColI,  *dpColD;
 	dpcell*		dpPrevM, *dpPrevI, *dpPrevD;
@@ -266,7 +266,7 @@ alignment loop_align_segment
 
 	enough_cells (control, qryLen, seqLen);
 
-	numCells = (qryLen+1) * (seqLen+1);
+	numCells = (qryLen+1) * (size_t) (seqLen+1);
 
 	dpM = (dpcell*) control->dp;
 	dpI = dpM + numCells;
@@ -281,7 +281,7 @@ alignment loop_align_segment
 
 	if (dbgLAAllocation)
 		{
-		fprintf (stderr, "  numCells=%d 0x%08X\n", numCells, (u32) (numCells*sizeof(dpcell)));
+		fprintf (stderr, "  numCells=%s 0x%016lX\n", ucommatize(numCells), numCells*sizeof(dpcell));
 		fprintf (stderr, "  dpM=%p dpI=%p dpD=%p\n", dpM, dpI, dpD);
 		fprintf (stderr, "  tbM=%p tbI=%p tbD=%p\n", tbM, tbI, tbD);
 		}
@@ -788,8 +788,8 @@ static void enough_cells
 		if (dbgLAAllocation)
 			{
 			fprintf (stderr, "for enough_cells(%s , %s)\n",ucommatize(queryLen),ucommatize(sequenceLen));
-			fprintf (stderr, "  numCells=0x%016lX %s\n",numCells,ucommatize(numCells));
-			fprintf (stderr, "  bytesNeeded=%016lX %s\n",bytesNeeded,ucommatize(bytesNeeded));
+			fprintf (stderr, "  numCells=%s 0x%016lX\n",ucommatize(numCells),numCells);
+			fprintf (stderr, "  bytesNeeded=%s %016lX\n",ucommatize(bytesNeeded),bytesNeeded);
 			}
 
 		if (control->dp == NULL)
