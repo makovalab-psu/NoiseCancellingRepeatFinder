@@ -51,7 +51,7 @@ typedef struct lascores
 typedef struct lacontrol
 	{
 	lascores scoring;
-	u32		allocCells;			// number of cells allocated for dp and tb
+	size_t	allocCells;			// number of cells allocated for dp and tb
 	void*	dp;					// block of memory for DP matrices;  this is
 								// .. allocated from the heap
 	void*	tb;					// block of memory for traceback matrices;
