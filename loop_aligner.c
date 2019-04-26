@@ -454,6 +454,9 @@ alignment loop_align_segment
 	a.score  = bestScore;
 
 	// otherwise, traceback *an* optimal alignment
+	//
+	// nota bene: 'head' is by analogy to a write head, which starts at the
+	//            end of the two alignment strings and steps backwards
 
 	seqTextHead = (char*) &control->seqText[control->textChars-1];  *seqTextHead = 0;
 	qryTextHead = (char*) &control->qryText[control->textChars-1];  *qryTextHead = 0;
@@ -465,6 +468,13 @@ alignment loop_align_segment
 	while (whichTb != 0)
 		{
 		startColIx = colIx;
+
+		if ((seqTextHead < control->seqText) || (qryTextHead < control->qryText))
+			{
+			fprintf (stderr, "INTERNAL ERROR in loop_align_segment(). Traceback has exceeded allocated text.\n");
+			exit (EXIT_FAILURE);
+			return a; // (never reaches here)
+			}
 
 		cellIx = (colIx*offsetColToCol) + rowIx;
 		if      (whichTb == tbWhichI)  tbVal = tbI[cellIx];

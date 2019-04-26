@@ -329,6 +329,8 @@ def main():
 					if (realText != gText):
 						exit("%s: sanity check failed for genome:\n\"%s\"\n\"%s\""
 						   % (os_path.basename(argv[0]),gText,realText))
+					print >>stderr, "%s: sanity check passed for read %s" \
+					              % (os_path.basename(argv[0]),readName)
 
 				if (motif != None):
 					positionalStats = positonal_stats(aSliced,motif,mStrand,
