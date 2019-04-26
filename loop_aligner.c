@@ -126,7 +126,7 @@ void free_loop_align
 	if (control->dp != NULL)
 		{ free (control->dp);       control->dp = NULL;       control->allocCells = 0; }
 	if (control->seqText != NULL)
-		{ free (control->seqText);  control->seqText = NULL;  control->textChars = 0; }
+		{ free (control->seqText);  control->seqText = NULL;  control->textChars  = 0; }
 	}
 
 //----------
@@ -506,6 +506,12 @@ alignment loop_align_segment
 	if (dbgLoopAlign != 0)
 		fprintf (stderr, "  traceback complete\n");
 
+	if (dbgLAAllocation)
+		{
+		fprintf (stderr, "  unused space in seqText buffer: %s\n", ucommatize(seqTextHead-control->seqText));
+		fprintf (stderr, "  unused space in qryText buffer: %s\n", ucommatize(qryTextHead-control->qryText));
+		}
+
 	seqTextScan = seqTextHead;    // the following loop is similar to
 	qryTextScan = qryTextHead;    // .. rescore_alignment()
 	a.mCount = a.mmCount = a.iCount = a.dCount = 0;
@@ -797,7 +803,7 @@ static void enough_cells
 	u32			sequenceLen)
 	{
 	size_t		numCells, growthCells;
-	u32			numChars, growthChars;
+	size_t		numChars, growthChars;
 	size_t		bytesNeeded;
 	void*		dp;
 	char*		seqText;

@@ -58,7 +58,7 @@ typedef struct lacontrol
 								// .. this is NOT allocated separately from the
 								// .. heap (it's carved from the same block as
 								// .. dp
-	u32		textChars;			// number of characters allocated for seqText
+	size_t	textChars;			// number of characters allocated for seqText
 								// .. and qryText (combined, including 
 								// .. terminating zeros)
 	char*	seqText;			// place to build alignment text, for sequence
