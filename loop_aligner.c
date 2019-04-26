@@ -237,7 +237,8 @@ alignment loop_align_segment
 	tbcell*		tbColM, *tbColI, *tbColD;
 	u32			offsetColToCol;
 	u32			colIx, rowIx, bestColIx, bestRowIx, predRowIx;
-	u32			startColIx, endColIx, endRowIx, c, r, cellIx;
+	u32			startColIx, endColIx, endRowIx, c, r;
+	size_t		cellIx;
 	u8			seqNuc, qryNuc;
 	s32			bestScore;
 	s32			mForCell;
@@ -476,7 +477,7 @@ alignment loop_align_segment
 			return a; // (never reaches here)
 			}
 
-		cellIx = (colIx*offsetColToCol) + rowIx;
+		cellIx = (colIx*(size_t)offsetColToCol) + rowIx;
 		if      (whichTb == tbWhichI)  tbVal = tbI[cellIx];
 		else if (whichTb == tbWhichD)  tbVal = tbD[cellIx];
 		else   /*whichTb == tbWhichM*/ tbVal = tbM[cellIx];
