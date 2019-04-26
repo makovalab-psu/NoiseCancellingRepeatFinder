@@ -158,11 +158,23 @@ ncrf_consensus_filter-- Filter Noise Cancelling Repeat Finder alignments, discar
 has a consensus different than the motif unit.
 
 ```bash  
-./ncrf_cat.py <output_from_NCRF> | ./ncrf_consensus_filter.py [options]
+usage: ncrf_cat <output_from_NCRF> | ncrf_consensus_filter [options]
   --consensusonly     just report the consensus motif(s) for each alignment,
                       instead of filtering; these are added to the alignment
-                      file with a "# consensus" tag
+                      file with a "# consensus" tag; note that the reported
+                      consensus will be canonical, the lexigographical minimum
+                      of all rotations including reverse complement
+  [<name>:]<motif>    dna repeat motif to process; if no motifs are specified,
+                      we process all of them (however, see note below)
+                      (more than one motif can be specified)
   --head=<number>     limit the number of input alignments
+  --progress=<number> periodically report how many alignments we've tested
+
+Any motif that was given a name during the alignment process has to be
+specified here, and with the same name. A motif was 'named' if an option of the
+form <name>:<motif> was given to NCRF. The nt sequence for named motifs does
+not appear in the alignment file produced by NCRF, but this program needs that
+sequence.
 ```
 
 ncrf_sort-- Sort the alignments output by Noise Cancelling Repeat Finder.
