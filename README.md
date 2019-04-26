@@ -58,7 +58,7 @@ The simplest use, searching reads.fa for the repeated motif GGCAT:
 cat reads.fa | ./NCRF GGCAT > example.ncrf
 ```
 
-A more detailed example is shown in example/README.md.  A description of the
+A more detailed example is shown in tutorial/README.md.  A description of the
 output format is included there.  The experiments subdirectory contains
 additional examples, provided "as is" without explanation.
 
