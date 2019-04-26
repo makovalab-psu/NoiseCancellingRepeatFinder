@@ -71,8 +71,12 @@ NCRF was designed with the idea that it would be used to search noisy reads,
 of the type produced by PacBio and Oxford Nanopore. The implementation was
 shaped by the expectation that sequences would not be longer than ≈500kbp and
 motifs were not longer than ≈200bp. So while it may work for bigger problems
-than that, there also may be issues, primarily relating to memory use and
-speed.
+than that, there also may be issues, primarily relating to memory consumption
+and speed.
+
+Similarly, we haven't explored it's use in the absence of sequencing noise.
+While we expect it would be useful for searching for repeated motifs in an
+assembled genome, we have not investigated that use case.
 
 ### Usage Details
 
