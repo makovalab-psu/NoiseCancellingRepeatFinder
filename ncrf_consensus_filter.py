@@ -15,7 +15,9 @@ def usage(s=None):
 usage: ncrf_cat <output_from_NCRF> | ncrf_consensus_filter [options]
   --consensusonly     just report the consensus motif(s) for each alignment,
                       instead of filtering; these are added to the alignment
-                      file with a "# consensus" tag
+                      file with a "# consensus" tag; note that the reported
+                      consensus will be canonical, the lexigographical minimum
+                      of all rotations including reverse complement
   [<name>:]<motif>    dna repeat motif to process; if no motifs are specified,
                       we process all of them (however, see note below)
                       (more than one motif can be specified)
