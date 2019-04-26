@@ -30,8 +30,8 @@ char* programRevisionDate    = REVISION_DATE;
 
 motif*	motifList = NULL;
 
-lascores defaultScoring    = { 2,  5,	// match, mismatch
-                               4,  11,	// insert-open, -extend
+lascores defaultScoring    = { 1,  5,	// match, mismatch
+                               5,  5,	// insert-open, -extend
                                5,  5,	// delete-open, -extend
                                0 };		// minimum score
 lascores pacbioScoring     = { 10, 35,	// match, mismatch
@@ -57,6 +57,11 @@ lascores nanoporeScoringV2 = { 10, 36,	// match, mismatch
 lascores nanoporeScoringV1 = { 10, 74,	// match, mismatch
                                70, 99,	// insert-open, -extend
                                45, 30,	// delete-open, -extend
+                               0 };		// minimum score
+lascores defaultScoring_1_00_XX         // (included only for historical reasons)
+                           = { 2,  5,	// match, mismatch
+                               4,  11,	// insert-open, -extend
+                               5,  5,	// delete-open, -extend
                                0 };		// minimum score
 lascores scoring;
 lacontrol control;
@@ -555,6 +560,14 @@ static void usage_scoring (void)
 	                                          nanoporeScoring.match,nanoporeScoring.mismatch,
 	                                          nanoporeScoring.iOpen,nanoporeScoring.iExtend,
 	                                          nanoporeScoring.dOpen,nanoporeScoring.dExtend);
+//  (this setting is intentionally unadvertised)
+//	fprintf (stderr, "  --scoring=1.00.XX     default scoring from version 1.00.XX\n");
+//	fprintf (stderr, "                        (M=%d MM=%d IO=%d IX=%d DO=%d DX=%d)\n",
+//	                                          defaultScoring_1_00_XX.match,defaultScoring_1_00_XX.mismatch,
+//	                                          defaultScoring_1_00_XX.iOpen,defaultScoring_1_00_XX.iExtend,
+//	                                          defaultScoring_1_00_XX.dOpen,defaultScoring_1_00_XX.dExtend);
+	fprintf (stderr, "  --scoring=simple:<M>/<E> simple scoring matrix with match reward <M> and all\n");
+	fprintf (stderr, "                        penalties <E>\n");
 	fprintf (stderr, "  --match=<reward>      (M)  reward when sequence matches motif\n");
 	fprintf (stderr, "  --mismatch=<penalty>  (MM) penalty when sequence mismatches motif\n");
 	fprintf (stderr, "  --iopen=<penalty>     (IO) first penalty when sequence has nt, motif doesn't\n");
@@ -778,6 +791,42 @@ static void parse_options (int _argc, char** _argv)
 			goto next_arg;
 			}
 
+		// --scoring=1.00.XX (unadvertised)
+
+		if ((strcmp (arg, "--scoring=1.00.XX") == 0)
+		 || (strcmp (arg, "--scoring=1.00.xx") == 0)
+		 || (strcmp (arg, "--scoring=1.00")    == 0))
+			{
+			u32	saveMinScore = scoring.minScore;
+			scoring = defaultScoring_1_00_XX;
+			scoring.minScore = saveMinScore;
+			goto next_arg;
+			}
+
+		if ((strcmp_prefix (arg, "--scoring=simple:") == 0)
+		 || (strcmp_prefix (arg, "--scoring=simple=") == 0)
+		 || (strcmp_prefix (arg, "--scoring=")        == 0)
+		 || (strcmp_prefix (arg, "M/E=")              == 0)
+		 || (strcmp_prefix (arg, "--M/E=")            == 0))
+			{
+			if (strcmp_prefix (arg, "--scoring=simple:") == 0)
+				argVal = strchr(arg,':') + 1;
+			else if (strcmp_prefix (arg, "--scoring=simple=") == 0)
+				argVal = strchr(argVal,'=') + 1;
+			argVal2 = strchr(argVal,'/');
+			if (argVal2 == NULL) chastise ("Can't understand \"%s\"\n", arg);
+			*(argVal2++) = 0;
+			scoring.match = string_to_u32 (argVal);
+			if (scoring.match < 1)
+				chastise ("invalid match reward: \"%s\"\n", argVal);
+			scoring.mismatch = string_to_u32 (argVal2);
+			if (scoring.mismatch < 1)
+				chastise ("invalid mismatch penalty: \"%s\"\n", argVal2);
+			scoring.iOpen = scoring.iExtend = scoring.mismatch;
+			scoring.dOpen = scoring.dExtend = scoring.mismatch;
+			goto next_arg;
+			}
+
 		// --match=<reward>
 
 		if ((strcmp_prefix (arg, "--match=") == 0)
@@ -792,7 +841,8 @@ static void parse_options (int _argc, char** _argv)
 		// --mismatch=<penalty>
 
 		if ((strcmp_prefix (arg, "--mismatch=") == 0)
-		 || (strcmp_prefix (arg, "MM=")         == 0))
+		 || (strcmp_prefix (arg, "MM=")         == 0)
+		 || (strcmp_prefix (arg, "--MM=")       == 0))
 			{
 			scoring.mismatch = string_to_u32 (argVal);
 			if (scoring.mismatch < 1)
@@ -804,7 +854,8 @@ static void parse_options (int _argc, char** _argv)
 
 		if ((strcmp_prefix (arg, "--iopen=") == 0)
 		 || (strcmp_prefix (arg, "--iOpen=") == 0)
-		 || (strcmp_prefix (arg, "IO=")      == 0))
+		 || (strcmp_prefix (arg, "IO=")      == 0)
+		 || (strcmp_prefix (arg, "--IO=")    == 0))
 			{
 			scoring.iOpen = string_to_u32 (argVal);
 			if (scoring.iOpen < 1)
@@ -816,7 +867,8 @@ static void parse_options (int _argc, char** _argv)
 
 		if ((strcmp_prefix (arg, "--iextend=") == 0)
 		 || (strcmp_prefix (arg, "--iExtend=") == 0)
-		 || (strcmp_prefix (arg, "IX=")        == 0))
+		 || (strcmp_prefix (arg, "IX=")        == 0)
+		 || (strcmp_prefix (arg, "--IX=")      == 0))
 			{
 			scoring.iExtend = string_to_u32 (argVal);
 			if (scoring.iExtend < 1)
@@ -826,7 +878,8 @@ static void parse_options (int _argc, char** _argv)
 
 		// (undocumented) I=<penalty>[,<penalty>]
 
-		if (strcmp_prefix (arg, "I=") == 0)
+		if ((strcmp_prefix (arg, "I=")   == 0)
+		 || (strcmp_prefix (arg, "--I=") == 0))
 			{
 			argVal2 = strchr(argVal,',');
 			if (argVal2 != NULL) *(argVal2++) = 0;
@@ -854,7 +907,8 @@ static void parse_options (int _argc, char** _argv)
 
 		if ((strcmp_prefix (arg, "--dopen=") == 0)
 		 || (strcmp_prefix (arg, "--dOpen=") == 0)
-		 || (strcmp_prefix (arg, "DO=")      == 0))
+		 || (strcmp_prefix (arg, "DO=")      == 0)
+		 || (strcmp_prefix (arg, "--DO=")    == 0))
 			{
 			scoring.dOpen = string_to_u32 (argVal);
 			if (scoring.dOpen < 1)
@@ -866,7 +920,8 @@ static void parse_options (int _argc, char** _argv)
 
 		if ((strcmp_prefix (arg, "--dextend=") == 0)
 		 || (strcmp_prefix (arg, "--dExtend=") == 0)
-		 || (strcmp_prefix (arg, "DX=")        == 0))
+		 || (strcmp_prefix (arg, "DX=")        == 0)
+		 || (strcmp_prefix (arg, "--DX=")      == 0))
 			{
 			scoring.dExtend = string_to_u32 (argVal);
 			if (scoring.dExtend < 1)
@@ -874,13 +929,10 @@ static void parse_options (int _argc, char** _argv)
 			goto next_arg;
 			}
 
-		if ((strcmp (arg, "--report:scoring") == 0)
-		 || (strcmp (arg, "--report:scores")  == 0))
-			{ reportScoring = true;  goto next_arg; }
-
 		// (undocumented) D=<penalty>[,<penalty>]
 
-		if (strcmp_prefix (arg, "D=") == 0)
+		if ((strcmp_prefix (arg, "D=")   == 0)
+		 || (strcmp_prefix (arg, "--D=") == 0))
 			{
 			argVal2 = strchr(argVal,',');
 			if (argVal2 != NULL) *(argVal2++) = 0;
@@ -903,6 +955,10 @@ static void parse_options (int _argc, char** _argv)
 				}
 			goto next_arg;
 			}
+
+		if ((strcmp (arg, "--report:scoring") == 0)
+		 || (strcmp (arg, "--report:scores")  == 0))
+			{ reportScoring = true;  goto next_arg; }
 
 		// --debridgediff=<ratiodiff>, --debridgelength=<bp> and --nodebridge (unadvertized)
 
