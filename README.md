@@ -102,6 +102,33 @@ assembled genome, we have not investigated that use case.
   --help=other          show other, less frequently used options
 ```
 
+And `./NCRF --help=scoring` will produce this list of scoring options
+
+```bash  
+  Default scoring is    M=1 MM=5 IO=5 IX=5 DO=5 DX=5
+  --scoring=pacbio      use scoring for pacbio reads
+                        (M=10 MM=35 IO=33 IX=21 DO=6 DX=28)
+  --scoring=nanopore    use scoring for nanopore reads
+                        (M=10 MM=63 IO=51 IX=98 DO=27 DX=34)
+  --scoring=simple:<M>/<E> simple scoring matrix with match reward <M> and all
+                        penalties <E>
+  --match=<reward>      (M)  reward when sequence matches motif
+  --mismatch=<penalty>  (MM) penalty when sequence mismatches motif
+  --iopen=<penalty>     (IO) first penalty when sequence has nt, motif doesn't
+  --iextend=<penalty>   (IX) other penalty when sequence has nt, motif doesn't
+  --dopen=<penalty>     (DO) first penalty when motif has nt, sequence doesn't
+  --dextend=<penalty>   (DX) other penalty when motif has nt, sequence doesn't
+  --report:scoring      report scoring parameters and quit
+
+  Mathematically, scaling all scores, including --minscore, by a constant
+  factor will produce equivalent alignment results. However, larger M shortens
+  the length susceptible to overflow. Overflow may occur if an alignment is
+  longer than 2^31/M. For M=100 this is about 20 million. An M larger than 100
+  is unlikely to be necessary. The same statements are true for MM, IO, IX, DO,
+  and DX
+```
+
+
 ### Additional scripts
 
 #### Primary scripts
