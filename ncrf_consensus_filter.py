@@ -16,8 +16,17 @@ usage: ncrf_cat <output_from_NCRF> | ncrf_consensus_filter [options]
   --consensusonly     just report the consensus motif(s) for each alignment,
                       instead of filtering; these are added to the alignment
                       file with a "# consensus" tag
+  [<name>:]<motif>    dna repeat motif to process; if no motifs are specified,
+                      we process all of them (however, see note below)
+                      (more than one motif can be specified)
   --head=<number>     limit the number of input alignments
-  --progress=<number> periodically report how many alignments we've tested"""
+  --progress=<number> periodically report how many alignments we've tested
+
+Any motif that was given a name during the alignment process has to be
+specified here, and with the same name. A motif was 'named' if an option of the
+form <name>:<motif> was given to NCRF. The nt sequence for named motifs does
+not appear in the alignment file produced by NCRF, but this program needs that
+sequence."""
 
 	if (s == None): exit (message)
 	else:           exit ("%s\n%s" % (s,message))
@@ -33,16 +42,18 @@ def main():
 
 	# parse the command line
 
-	filterToKeep    = "consensus"
-	reportConsensus = False
-	reportMsa       = False
-	winnerThreshold = 0.50  # (see derive_consensuses)
-	sliceWidth      = None
-	sliceStep       = None
-	headLimit       = None
-	reportProgress  = None
-	requireEof      = True
-	debug           = []
+	filterToKeep     = "consensus"
+	nameToMotif      = {}
+	motifsOfInterest = []
+	reportConsensus  = False
+	reportMsa        = False
+	winnerThreshold  = 0.50  # (see derive_consensuses)
+	sliceWidth       = None
+	sliceStep        = None
+	headLimit        = None
+	reportProgress   = None
+	requireEof       = True
+	debug            = []
 
 	for arg in argv[1:]:
 		if ("=" in arg):
@@ -87,20 +98,33 @@ def main():
 			debug += argVal.split(",")
 		elif (arg.startswith("--")):
 			usage("unrecognized option: %s" % arg)
+		elif (":" in arg):
+			(name,motif) = arg.split(":",1)
+			if (name in nameToMotif) and (nameToMotif[name] != motif):
+				usage("\"%s\" is given for more than one motif" % name)
+			if (name not in nameToMotif):
+				nameToMotif[name] = motif
+				motifsOfInterest += [motif]
 		else:
-			usage("unrecognized option: %s" % arg)
+			motifsOfInterest += [arg]
+
+	if (motifsOfInterest == []):
+		motifsOfInterest = None  # this really means all motifs are of interest
+	else:
+		motifsOfInterest = set(motifsOfInterest)
 
 	# process the alignments
 
 	if (sliceWidth == None):
-		simple_consensus_filter(stdin)
+		simple_consensus_filter(stdin,motifsOfInterest,nameToMotif)
 	else:
-		sliced_consensus_filter(stdin,sliceWidth,sliceStep)
+		sliced_consensus_filter(stdin,motifsOfInterest,nameToMotif,
+		                        sliceWidth,sliceStep)
 
 
 # simple_consensus_filter--
 
-def simple_consensus_filter(f):
+def simple_consensus_filter(f,motifsOfInterest,nameToMotif):
 	alignmentNum = 0
 	alignmentsWritten = 0
 	for a in alignments(f,requireEof):
@@ -114,6 +138,15 @@ def simple_consensus_filter(f):
 		if (headLimit != None) and (alignmentNum > headLimit):
 			print >>stderr, "limit of %d alignments reached" % headLimit
 			break
+
+		if (a.motif in nameToMotif):
+			a.motif = nameToMotif[a.motif]
+
+		if (motifsOfInterest != None) and (a.motif not in motifsOfInterest):
+			continue
+
+		if ([ch for ch in a.motif if (ch not in "ACGT")] != []):
+			abort_warn_about_named_motifs(a)
 
 		motifText = a.motifText
 		seqText   = a.seqText
@@ -200,7 +233,7 @@ def simple_consensus_filter(f):
 
 userHasBeenWarned = False
 
-def sliced_consensus_filter(f,sliceWidth,sliceStep):
+def sliced_consensus_filter(f,motifsOfInterest,nameToMotif,sliceWidth,sliceStep):
 	global userHasBeenWarned
 
 	if (reportMsa) and (not userHasBeenWarned):
@@ -220,6 +253,15 @@ def sliced_consensus_filter(f,sliceWidth,sliceStep):
 		if (headLimit != None) and (alignmentNum > headLimit):
 			print >>stderr, "limit of %d alignments reached" % headLimit
 			break
+
+		if (a.motif in nameToMotif):
+			a.motif = nameToMotif[a.motif]
+
+		if (motifsOfInterest != None) and (a.motif not in motifsOfInterest):
+			continue
+
+		if ([ch for ch in a.motif if (ch not in "ACGT")] != []):
+			abort_warn_about_named_motifs(a)
 
 		motifText = a.motifText
 		seqText   = a.seqText
@@ -501,6 +543,16 @@ def derive_consensuses(seqChunks,winnerThreshold=0.50):
 def tolerant_reverse_complement(nukes):
 	if (nukes == None): return None
 	return reverse_complement(nukes)
+
+
+# abort_warn_about_named_motifs--
+
+def abort_warn_about_named_motifs(a):
+	print >>stderr, "ERROR: alignment at line %d contains non-ACGT:\n\"%s\"" % (a.lineNumber,a.motif)
+	print >>stderr, "This is probably because the alignment file uses named motifs. If so, you"
+	print >>stderr, "need to specify the same <name>:<motif> options on this command line as were"
+	print >>stderr, "provided to the NCRF alignment command."
+	exit()
 
 
 if __name__ == "__main__": main()
