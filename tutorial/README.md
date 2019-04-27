@@ -104,9 +104,9 @@ two motifs (GGAAT and GGAT).
 #### (3) Filtering for consensus.
 
 ncrf_consensus_filter.py is a post processor that automatically discards
-alignments like the one in the previous example. It performs a statistical
-test on the positional alignment stats and discards an alignment if the stats
-are inconsistent with a uniform distribution across the motif positions.
+alignments like the one in the previous example. It derives a consensus
+from the segments of the sequence that aligned to the motif. If the consensus
+doesn't match the motif, the alignment is discarded.
 
 Run Noise Cancelling Repeat Finder again, passing the output through the
 consensus filter.
