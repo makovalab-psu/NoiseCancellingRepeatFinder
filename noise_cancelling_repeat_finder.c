@@ -88,7 +88,13 @@ u32		clumpLength       = 0;	// (valid only if debridge is true) minimum
 								// .. repeat length for DISqualifying clump in
 								// .. an alignment
 float	clumpMRatio       = 0.0;// (valid only if debridge is true) minimum
-								// .. ratio of errors to columns inside a clump
+								// .. ratio of errors to columns inside a clump;
+								// .. special values:
+								// ..   -1 => inhibit error-clump removal
+								// ..    0 => report subalignments that satisfy
+								// ..         state 1 debridging; likely
+								// ..         overlapping with other reported
+								// ..         alignments
 float	clumpMRatioDiff   = 0.10;//(valid only if debridge is true)
 								// .. effective difference between clumpMRatio
 								// .. and 1-debridgeMRatio
@@ -127,6 +133,8 @@ int		dbgInhibitSubalignment = false;
 int		dbgDebridger      = false;
 int		dbgDebridgerDetail = false;
 int		dbgDebridgerStack = false;
+char*	dbgExcisedFilename = NULL;
+FILE*	dbgExcisedF       = NULL;
 int		dbgClumpDetection = false;
 int		dbgClumpSegments  = false;
 int		dbgClumpCharacters = false;
@@ -395,6 +403,21 @@ int main
 			}
 		}
 
+	// if we're supposed to report excised segments (debridged error clumps),
+	// open the file for that
+
+	dbgExcisedF = NULL;
+	if (dbgExcisedFilename != NULL)
+		{
+		dbgExcisedF = fopen (dbgExcisedFilename, "wt");
+		if (dbgExcisedF == NULL)
+			{
+			fprintf (stderr, "failed to open \"%s\"\n", dbgExcisedFilename);
+			exit(EXIT_FAILURE);
+			return 0; // (never reaches here)
+			}
+		}
+
 	// process queries
 
 	if (dbgNoSequence) goto no_sequences;
@@ -425,10 +448,10 @@ int main
 			if ((numSequences == 1) || (numSequences % sequenceProgress == 0))
 				{
 				report_progress_clock (stderr, "({time})");
-				fprintf (stderr, " processing sequence %s: %s%c (%u alignments reported so far)\n",
+				fprintf (stderr, " processing sequence %s: %s%c (%u alignment%s reported so far)\n",
 				                 ucommatize(numSequences),
 				                 sequenceFeed->name, sequenceFeed->isRevComp?'-':'+',
-				                 alignmentsReported);
+				                 alignmentsReported, (alignmentsReported==1)?"":"s");
 				reset_progress_clock ();
 				}
 			}
@@ -461,19 +484,22 @@ int main
 	if (markEndOfFile)
 		printf ("# ncrf end-of-file\n");
 
-	fprintf (stderr, "(%u alignments reported)\n", alignmentsReported);
+	fprintf (stderr, "(%u alignment%s reported)\n",
+	                 alignmentsReported, (alignmentsReported==1)?"":"s");
 
 no_sequences:
 
-	// relinquish allocated memory
+	// relinquish allocated memory, etc.
 
-	if (dbgTriggerName != NULL) { free (dbgTriggerName);           dbgTriggerName = NULL; }
-	if (sequenceFeed   != NULL) { free_fasta_feed (sequenceFeed);  sequenceFeed   = NULL; }
-	if (motifList      != NULL) { free_motifs (motifList);         motifList      = NULL; }
-	if (eventCounts    != NULL) { free (eventCounts);              eventCounts    = NULL; }
-	if (debridgeStack  != NULL) { free (debridgeStack);            debridgeStack  = NULL; }
-	if (prefixFlank    != NULL) { free (prefixFlank);              prefixFlank    = NULL; }
-	if (suffixFlank    != NULL) { free (suffixFlank);              suffixFlank    = NULL; }
+	if (dbgExcisedFilename != NULL) { free (dbgExcisedFilename);       dbgExcisedFilename = NULL; }
+	if (dbgExcisedF        != NULL) { fclose (dbgExcisedF);            dbgExcisedF        = NULL; }
+	if (dbgTriggerName     != NULL) { free (dbgTriggerName);           dbgTriggerName     = NULL; }
+	if (sequenceFeed       != NULL) { free_fasta_feed (sequenceFeed);  sequenceFeed       = NULL; }
+	if (motifList          != NULL) { free_motifs (motifList);         motifList          = NULL; }
+	if (eventCounts        != NULL) { free (eventCounts);              eventCounts        = NULL; }
+	if (debridgeStack      != NULL) { free (debridgeStack);            debridgeStack      = NULL; }
+	if (prefixFlank        != NULL) { free (prefixFlank);              prefixFlank        = NULL; }
+	if (suffixFlank        != NULL) { free (suffixFlank);              suffixFlank        = NULL; }
 	free_loop_align (&control);
 	free_segment_pool ();
 
@@ -1230,6 +1256,15 @@ static void parse_options (int _argc, char** _argv)
 		 || (strcmp (arg, "--debug=debridger:stack") == 0))
 			{ dbgDebridgerStack = true;  goto next_arg; }
 
+		if (strcmp_prefix (arg, "--debug=report:excised:") == 0)
+			{
+			argVal2 = strchr(argVal,':') + 1;
+			argVal2 = strchr(argVal2,':') + 1;
+			if (dbgExcisedFilename != NULL) free(dbgExcisedFilename);
+			dbgExcisedFilename = copy_string(argVal2);
+			goto next_arg;
+			}
+
 		if ((strcmp (arg, "--debug=clump") == 0)
 		 || (strcmp (arg, "--debug=clumps") == 0)
 		 || (strcmp (arg, "--debug=clumpdetect") == 0))
@@ -1957,6 +1992,9 @@ static void report_debridged_alignment
 
 	for (aIx=0 ; a.seqText[aIx]!=0 ; aIx++)
 		{
+		// incorporate the next alignment column into the score (the running
+		// sum of (1-R)M - RX)
+
 		if (a.seqText[aIx] == a.qryText[aIx]) weight = 1-debridgeMRatio;
 		                                 else weight =  -debridgeMRatio;
 		score += weight;
@@ -1969,12 +2007,17 @@ static void report_debridged_alignment
 				fprintf (stderr, "%3d: x %5.2f", aIx, score);
 			}
 
+		// if the running sum is negative, there's nothing to do here
+
 		if (weight < 0.0)
 			{
 			if ((dbgDebridgerStack) && (dbgTriggerName == NULL) && (dbgTriggerCrc == 0))
 				fprintf (stderr, "\n");
 			continue;
 			}
+
+		// otherwise, incorporate this site as an interval (or part of an
+		// interval) on the stack
 
 		if ((top > 0) && (debridgeStack[top].right == aIx))
 			{
@@ -2042,11 +2085,12 @@ static void report_debridged_alignment
 			fprintf (stderr, "\n");
 		}
 
-	// report intervals from the stack
+	// report intervals from the stack; these are intervals that have a high
+	// error density, and are candidates to be removed
 
 	for (sp=1 ; sp<=top ; sp++)
 		{
-		// convert interval to sub-alignment
+		// convert the interval to a sub-alignment
 
 		leftIx  = debridgeStack[sp].left;
 		rightIx = debridgeStack[sp].right;
@@ -2071,8 +2115,9 @@ static void report_debridged_alignment
 			continue;
 			}
 
-		// otherwise, the sub-alignment is long enough; if we're not removing
-		// error clumps, report it and move on to the next interval
+		// otherwise, the sub-alignment is long enough (to satisfy stage 1);
+		// if we're not removing error clumps (stage 2), report it and move on
+		// to the next interval
 
 		if ((dbgDebridger) && (!dbgDebridgerDetail) && (dbgTriggerName == NULL) && (dbgTriggerCrc == 0))
 			fprintf (stderr, " stack     [%d] columns %d-%d"
@@ -2085,6 +2130,8 @@ static void report_debridged_alignment
 
 		if (clumpMRatio == 0.0)
 			{
+			// $$$ this is strange -- shouldn't we be reporting this to a
+			// $$$ .. *different* file?
 			if (aSub.score >= (s32) control.scoring.minScore)
 				report_alignment(f,seq,m,aSub);
 			free_alignment (aSub);
@@ -2123,6 +2170,11 @@ static void report_debridged_alignment
 					                 prevEnd, seg->start,
 					                 bSub.seqStart,bSub.seqEnd,
 					                 (bSub.qryBaseCount>=debridgeLength)? "" : " (short, discarded)");
+				if (dbgExcisedF != NULL)  // report excised segment to a separate file
+					{
+					alignment cSub = subalignment (&control.scoring, aSub, seg->start, seg->end);
+					report_alignment_for_debug(dbgExcisedF,seq,m,cSub);
+					}
 				free_alignment (bSub);
 				}
 			prevEnd = seg->end;
