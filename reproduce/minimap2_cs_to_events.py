@@ -158,7 +158,7 @@ def cs_to_events(cs):
 			if   (ch == "+"): state = "io"
 			elif (ch == "-"): state = "do"
 			else:             state = "*"
-		elif (ch in "acgt"):
+		elif (ch in "acgtn"):
 			if   (state == "io"): (io,state) = (io+1,"ix")
 			elif (state == "ix"): ix += 1
 			elif (state == "do"): (do,state) = (do+1,"dx")
