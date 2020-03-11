@@ -220,7 +220,7 @@ static alignment longest_subalignment       (lascores* scoring, alignment a,
                                              u32 minLength, float minMRatio);
 static alignment subalignment               (lascores* scoring, alignment a,
                                              u32 lftIx, u32 rgtIx);
-static void      report_debridged_alignment (FILE* f, feed* seq, motif* m, alignment a);
+static seglist*  report_debridged_alignment (FILE* f, feed* seq, motif* m, alignment a);
 static seglist*  find_error_clumps          (feed* seq, alignment a);
 static void      report_alignment           (FILE* f, feed* seq, motif* m, alignment a);
 static void      report_alignment_for_debug (FILE* f, feed* seq, motif* m, alignment a);
@@ -229,7 +229,7 @@ static void      free_segment_pool          (void);
 static seglist*  allocate_segment           (void);
 static seglist*  add_segment                (seglist** segmentList, u32 start, u32 end);
 static seglist*  pop_segment                (seglist** segmentList);
-static void      unuse_segment              (seglist* s);
+static void      recycle_segment            (seglist* s);
 
 //----------
 //
@@ -1405,9 +1405,10 @@ static void report_motif_matches
 	motif*		m)
 	{
 	seglist*	queue, *seg;
+	seglist*	excised, *excisedSeg;
 	alignment	a, aSub;
 	u32			seqLen, minSegment;
-	u32			segStart, segEnd, aStart, aEnd;
+	u32			segStart, segEnd, aStart, aEnd, eStart, eEnd;
 
 	seqLen = strlen ((char*) seq->nt);
 	if (seqLen == 0) return;
@@ -1423,6 +1424,9 @@ static void report_motif_matches
 
 	queue = NULL;
 	add_segment (&queue, 0, seqLen);
+	if ((dbgSegments) && (dbgTriggerName == NULL))
+		fprintf (stderr, "pushing segment %d,%d (entire sequence)\n",
+		                                  0, seqLen);
 
 	while (queue != NULL)
 		{
@@ -1430,17 +1434,13 @@ static void report_motif_matches
 		// the segment contains a suitable alignment, report it, then dispose
 		// of it;  note that we don't report alignments that are too noisy, but
 		// we will still look for alignments in the subintervals
-		// $$$ need to check whether any subinterval of a too-noisy alignment
-		//     .. would be long enough and noise-free enough;  what we want is
-		//     .. the longest subinterval that meets the noise threshold;  that
-		//     .. can be found in one pass;  we need to reflect those new bounds
-		//     .. in dividing the segment, because there may be more than one
-		//     .. suitable sub-alignment
 
 		seg = pop_segment (&queue);
 		segStart = seg->start;
 		segEnd   = seg->end;
-		unuse_segment (seg);
+		recycle_segment (seg);
+		if ((dbgSegments) && (dbgTriggerName == NULL))
+			fprintf (stderr, "popped segment %d,%d\n", segStart, segEnd);
 
 		a = best_alignment (seq, segStart, segEnd, m, minLength);
 		if ((dbgSegments) && (dbgTriggerName == NULL))
@@ -1451,6 +1451,13 @@ static void report_motif_matches
 				fprintf (stderr, "(no suitable alignment found)\n");
 			}
 		if (!a.active) continue;
+
+		// if the 'best' alignment is too noisy; find the longest subinterval
+		// of it that meets our thresholds; if there is one, use it as the
+		// aligned subinterval of this segment (the segment we popped from
+		// the queue) instead of the 'best' alignment; note that there may be
+		// more than one suitable sub-alignment, but any others will be part of
+		// one of the leftover subsegments we push back to the queue
 
 		if ((minMRatio != 0.0) && (a.matchRatio < minMRatio) && (!dbgInhibitSubalignment))
 			{
@@ -1467,17 +1474,24 @@ static void report_motif_matches
 				}
 			}
 
+		// if the alignment is good enough, either subject it to de-bridging
+		// or just report it; note that the de-bridger may trim off noisy
+		// ends or pieces, but will report whatever aligned pieces it decides
+		// are good; pieces the de-bridger excised are returned to the queue
+		// to be searched for other suitable alignments
+
 		aStart = a.seqStart;
 		aEnd   = a.seqEnd;
 
+		excised = NULL;
 		if ((minMRatio == 0.0) || (a.matchRatio >= minMRatio))
 			{
 			if (debridgeMRatio > 0.0)
-				report_debridged_alignment (f, seq, m, a);
+				excised = report_debridged_alignment (f, seq, m, a);
 			else
 				{
 				if (a.score >= (s32) control.scoring.minScore)
-					report_alignment(f, seq, m, a);
+					report_alignment (f, seq, m, a);
 				}
 			}
 
@@ -1486,13 +1500,43 @@ static void report_motif_matches
 		if ((dbgSegments) && (dbgTriggerName == NULL))
 			fprintf (stderr, "aligned at %d,%d\n", aStart, aEnd);
 
-		// add left and right leftover segments back to the queue (unless they
+		// push left and right leftover segments back to the queue (unless they
 		// are too short)
 
 		if (segEnd - aEnd >= minSegment)            // right leftover
+			{
 			add_segment (&queue, aEnd, segEnd);
+			if ((dbgSegments) && (dbgTriggerName == NULL))
+				fprintf (stderr, "pushing segment %d,%d (right leftover)\n",
+				                 aEnd, segEnd);
+			}
 		if (aStart - segStart >= minSegment)        // left leftover
+			{
 			add_segment (&queue, segStart, aStart);
+			if ((dbgSegments) && (dbgTriggerName == NULL))
+				fprintf (stderr, "pushing segment %d,%d (left leftover)\n",
+				                 segStart, aStart);
+			}
+
+		// push any segments the debridger excised back to the queue (unless
+		// they are too short)
+
+		while (true)
+			{
+			excisedSeg = pop_segment (&excised);
+			if (excisedSeg == NULL) break;
+
+			eStart = excisedSeg->start;
+			eEnd   = excisedSeg->end;
+			recycle_segment (excisedSeg);
+			if (eEnd - eStart >= minSegment)
+				{
+				add_segment (&queue, eStart, eEnd);
+				if ((dbgSegments) && (dbgTriggerName == NULL))
+					fprintf (stderr, "pushing segment %d,%d (excised segment)\n",
+					                 eStart, eEnd);
+				}
+			}
 		}
 
 	if ((dbgSegments) && (dbgTriggerName == NULL))
@@ -1924,7 +1968,9 @@ static alignment subalignment
 //	clumpLength:
 //
 // Returns:
-//	(nothing)
+//	A pointer to a list of segments to be removed from the alignment.  The
+//	caller is responsible for returning these elements to the segment pool,
+//	with recycle_segment().
 //
 //----------
 //
@@ -1952,7 +1998,7 @@ static alignment subalignment
 //
 //----------
 
-static void report_debridged_alignment
+static seglist* report_debridged_alignment
    (FILE*		f,
 	feed*		seq,
 	motif*		m,
@@ -1961,8 +2007,9 @@ static void report_debridged_alignment
 	u32			top, sp;
 	double		score, weight;
 	u32			aIx, leftIx, rightIx;
-	alignment	aSub, bSub;
+	alignment	aSub, bSub, cSub;
 	u32			subAlignmentLength;
+	seglist*	excised = NULL;
 	seglist*	clumps, *seg;
 	u32			prevEnd;
 
@@ -1978,14 +2025,14 @@ static void report_debridged_alignment
 		if ((dbgTriggerName == NULL) && (dbgTriggerCrc == 0))
 			{
 			fprintf (stderr, "\n~~~~~ debridging this alignment ~~~~~\n");
-			report_alignment_for_debug(stderr,seq,m,a);
+			report_alignment_for_debug (stderr, seq, m, a);
 			fprintf (stderr, "# crc %08X\n", crc);
 			fprintf (stderr, "# |seqText|=%u |qryText|=%u\n",
 			                 (u32)strlen(a.seqText), (u32)strlen(a.qryText));
 			}
 		}
 
-	// build intervals
+	// build intervals, saving them on a stack
 
 	top   = 0;
 	score = 0.0;
@@ -2085,8 +2132,8 @@ static void report_debridged_alignment
 			fprintf (stderr, "\n");
 		}
 
-	// report intervals from the stack; these are intervals that have a high
-	// error density, and are candidates to be removed
+	// report intervals from the stack; these are intervals that have a low
+	// error density, and are candidates to be reported
 
 	for (sp=1 ; sp<=top ; sp++)
 		{
@@ -2100,11 +2147,12 @@ static void report_debridged_alignment
 		if ((dbgDebridgerDetail) && (dbgTriggerName == NULL) && (dbgTriggerCrc == 0))
 			fprintf (stderr, " stack     [%d] columns %d-%d"
 			                 "  sequence interval %d..%d"
-			                 "  length %d querybp %d\n",
+			                 "  length %d querybp %d (%s)\n",
 			                 sp, leftIx, rightIx,
 			                 aSub.seqStart, aSub.seqEnd,
 			                 aSub.seqEnd - aSub.seqStart,
-			                 aSub.qryBaseCount);
+			                 aSub.qryBaseCount,
+			                 (aSub.qryBaseCount<debridgeLength)?"too short":"long enough");
 
 		// if the sub-alignment is too short, discard it and move on to the
 		// next interval
@@ -2130,27 +2178,27 @@ static void report_debridged_alignment
 
 		if (clumpMRatio == 0.0)
 			{
-			// $$$ this is strange -- shouldn't we be reporting this to a
-			// $$$ .. *different* file?
 			if (aSub.score >= (s32) control.scoring.minScore)
-				report_alignment(f,seq,m,aSub);
+				report_alignment (f, seq, m, aSub);
 			free_alignment (aSub);
 			continue;
 			}
 
-		// remove error clumps and report any between-clump sub-sub-alignments
-		// that are long enough
+		// find error clumps; if none are found, report the full alignment
 
 		clumps = find_error_clumps(seq,aSub);
 		if (clumps == NULL)
 			{
-			// no clumps, so report the full alignment
 			if (aSub.score >= (s32) control.scoring.minScore)
-				report_alignment(f,seq,m,aSub);
+				report_alignment (f, seq, m, aSub);
 			free_alignment (aSub);
 			if (dbgClumpDetection) fprintf (stderr, "(no clumps removed)\n");
 			continue;
 			}
+
+		// 'remove' error clumps and report any between-clump sub-sub-alignments
+		// that are long enough; note that the excised clumps are reported back
+		// to our caller and may undergo further search
 
 		subAlignmentLength = strlen(aSub.seqText);
 
@@ -2163,22 +2211,22 @@ static void report_debridged_alignment
 				if (bSub.qryBaseCount >= debridgeLength)
 					{
 					if (bSub.score >= (s32) control.scoring.minScore)
-						report_alignment(f,seq,m,bSub);
+						report_alignment (f, seq, m, bSub);
 					}
+				cSub = subalignment (&control.scoring, aSub, seg->start, seg->end);
+				add_segment (&excised, cSub.seqStart, cSub.seqEnd);
 				if (dbgClumpDetection)
 					fprintf (stderr, "between clumps: %u-%u seq: %u-%u%s\n",
 					                 prevEnd, seg->start,
 					                 bSub.seqStart,bSub.seqEnd,
 					                 (bSub.qryBaseCount>=debridgeLength)? "" : " (short, discarded)");
 				if (dbgExcisedF != NULL)  // report excised segment to a separate file
-					{
-					alignment cSub = subalignment (&control.scoring, aSub, seg->start, seg->end);
-					report_alignment_for_debug(dbgExcisedF,seq,m,cSub);
-					}
+					report_alignment_for_debug (dbgExcisedF, seq, m, cSub);
 				free_alignment (bSub);
+				free_alignment (cSub);
 				}
 			prevEnd = seg->end;
-			unuse_segment (seg);
+			recycle_segment (seg);
 			}
 
 		if (subAlignmentLength > prevEnd)
@@ -2187,7 +2235,7 @@ static void report_debridged_alignment
 			if (bSub.qryBaseCount >= debridgeLength)
 				{
 				if (bSub.score >= (s32) control.scoring.minScore)
-					report_alignment(f,seq,m,bSub);
+					report_alignment (f, seq, m, bSub);
 				}
 			if (dbgClumpDetection)
 				fprintf (stderr, "between clumps: %u-%u seq: %u-%u%s\n",
@@ -2200,7 +2248,7 @@ static void report_debridged_alignment
 		free_alignment (aSub);
 		}
 
-	return;
+	return excised;
 
 	// failure exits
 
@@ -2230,7 +2278,7 @@ stack_overflow:
 // Returns:
 //	A pointer to a list of segments to be removed from the alignment.  The
 //	caller is responsible for returning these elements to the segment pool,
-//	with unuse_segment().
+//	with recycle_segment().
 //
 //----------
 //
@@ -2479,7 +2527,7 @@ static seglist* find_error_clumps
 			add_segment (&collapsedClumps,start,end);
 			start = seg->start;  end = seg->end;
 			}
-		unuse_segment (seg);
+		recycle_segment (seg);
 		}
 
 	if (end != (u32) -1)
@@ -2920,8 +2968,8 @@ static seglist* add_segment
 	{
 	seglist*	s;
 
-	if ((dbgSegments) && (dbgTriggerName == NULL))
-		fprintf (stderr, "add_segment(%u,%u)\n", start, end);
+	//if ((dbgSegments) && (dbgTriggerName == NULL))
+	//	fprintf (stderr, "add_segment(%u,%u)\n", start, end);
 
 	s = allocate_segment();
 
@@ -2951,14 +2999,14 @@ static seglist* pop_segment
 	s = *segmentList;
 	(*segmentList) = (*segmentList)->next;
 
-	if ((dbgSegments) && (dbgTriggerName == NULL))
-		fprintf (stderr, "pop_segment() --> %u,%u\n", s->start, s->end);
+	//if ((dbgSegments) && (dbgTriggerName == NULL))
+	//	fprintf (stderr, "pop_segment() --> %u,%u\n", s->start, s->end);
 
 	return s;
 	}
 
 
-static void unuse_segment
+static void recycle_segment
    (seglist*	s)
 	{
 	// add the record to the head of the pool
