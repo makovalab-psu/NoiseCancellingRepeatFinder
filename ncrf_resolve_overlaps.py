@@ -50,12 +50,12 @@ contains two motifs, GGAAT and CATATA.
 
   name_template    | output
   -----------------+----------------------------------------------------------
-  (none)           | un-overlapped and overlap groups written to console
+  (none)           | un-overlapped and overlap groups written to the console
   -----------------+----------------------------------------------------------
   filename         | un-overlapped and overlap groups written to filename
   -----------------+----------------------------------------------------------
   filename.{motif} | un-overlapped GGAAT written to filename.GGAAT
-                   | contains un-overlapped CATATA written to filename.CATATA
+                   | un-overlapped CATATA written to filename.CATATA
                    | overlap groups written to filename.overlaps
   -----------------+----------------------------------------------------------
 
