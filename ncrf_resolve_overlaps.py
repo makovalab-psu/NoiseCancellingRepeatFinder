@@ -18,19 +18,11 @@ usage: ncrf_resolve_overlaps <alignment_summary..> [options]
                          name template below; if this option is absent, all
                          output is written to the console
 
-The name template either names a single file or a collection of files.  If
-if includes the substring "{motif}", this substring is replaced by a motif name
-and any un-overlapped alignments to that motif are written to that file. If
-the template name doesn't include "{motif}", all un-overlapped alignments and
-overlapping groups are written to one file.
+The name template either names a single file or a collection of files. See
+below for some examples.
 
-Overlapping groups are either written to the console (if no name template is
-given), to the same file with alignments (if the name template doesn't contain
-"{motif}"), or to a a file separate from the alignments (with "{motif}"
-replaced by "overlaps").
-
-The alignment summaries are usually the output from ncrf_summary. Any file may
-contain alignments for more than one motif.
+The input alignment summaries are usually the output from ncrf_summary. Any
+input file may contain alignments for more than one motif.
 
 A typical input file is shown below. However, we do not interpret any columns
 other than motif, seq, start, and end. This allows, for example, the output
@@ -40,7 +32,46 @@ from ncrf_summary_with_consensus.
   1     GGAAT FAB41174_6 1568  3021 -      3352   1461    82.6%  1242 169 42 50
   11    GGAAT FAB41174_2 3908  5077 -      7347   1189    82.4%  1009 125 35 55
   21    GGAAT FAB41174_0 2312  3334 -      4223   1060    81.1%  881  115 26 64
-   ..."""
+   ...
+
+If the output name template includes the substring "{motif}", this substring is
+replaced by a motif name and any un-overlapped alignments to that motif are
+written to that file. If the template name doesn't include "{motif}", all
+un-overlapped alignments and overlapping groups are written to one file.
+
+Overlapping groups are either written to the console (if no name template is
+given), to the same file with alignments (if the name template doesn't contain
+"{motif}"), or to a a file separate from the alignments (with "{motif}"
+replaced by "overlaps").
+
+This is summarized in the table below. We assume for this that the input only
+contains two motifs, GGAAT and CATATA.
+
+  name_template    | output
+  -----------------+----------------------------------------------------------
+  (none)           | un-overlapped and overlap groups written to console
+  -----------------+----------------------------------------------------------
+  filename         | un-overlapped and overlap groups written to filename
+  -----------------+----------------------------------------------------------
+  filename.{motif} | un-overlapped GGAAT written to filename.GGAAT
+                   | contains un-overlapped CATATA written to filename.CATATA
+                   | overlap groups written to filename.overlaps
+  -----------------+----------------------------------------------------------
+
+Overlap groups are separated by a single blank line, as shown below (note that
+this is a contrived example). When un-overlapped alignments and overlapped ones
+are in the same file, the un-overlapped ones are first, with a blank line
+separating each alignment.
+
+  #line motif  seq        start end  strand seqLen querybp mRatio m    mm  i  d
+  1     GGAAT  FAB41174_6 1568  3021 -      3352   1461    82.6%  1242 169 42 50
+  1     CATATA FAB41174_6 1621  2607 -      3352    ...
+  (blank line)
+  21    GGAAT  FAB41174_0 2312  3334 -      4223   1060    81.1%  881  115 26 64
+  41    CATATA FAB41174_0 3276  4098 -      4223    ...
+  31    GGAAT  FAB41174_0 3966  4271 +      4223    ...
+  (blank line)
+   ... (more groups)"""
 
 	if (s == None): exit (message)
 	else:           exit ("%s\n%s" % (s,message))
@@ -93,7 +124,7 @@ def main():
 		else:
 			f = file(filename,"rt")
 		for summary in read_summary(f,filename):
-			summaryNum += 1 
+			summaryNum += 1
 
 			if (headLimit != None) and (summaryNum > headLimit):
 				print >>stderr, "limit of %d summaries reached" % headLimit
