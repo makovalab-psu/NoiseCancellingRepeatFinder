@@ -28,10 +28,10 @@ A typical input file is shown below. However, we do not interpret any columns
 other than motif, seq, start, and end. This allows, for example, the output
 from ncrf_summary_with_consensus.
 
-  #line motif seq        start end  strand seqLen querybp mRatio m    mm  i  d
-  1     GGAAT FAB41174_6 1568  3021 -      3352   1461    82.6%  1242 169 42 50
-  11    GGAAT FAB41174_2 3908  5077 -      7347   1189    82.4%  1009 125 35 55
-  21    GGAAT FAB41174_0 2312  3334 -      4223   1060    81.1%  881  115 26 64
+  #line motif seq       start end  strand seqLen querybp mRatio m    mm  i  d
+  1     TGTA  JZL5129_2 552   582  +      15216  30      100.0% 30   0   0  0
+  9     GGTA  JZL5129_2 579   2262 +      15216  1681    92.9%  1583 77  23 21
+  17    GGGA  JZL5129_2 782   876  +      15216  92      92.6%  87   5   2  0
    ...
 
 If the output name template includes the substring "{motif}", this substring is
@@ -41,9 +41,9 @@ un-overlapped alignments and overlapping groups are written to one file. Note
 that "{motif}" is the word "motif" surrounded by two curly brackets.
 
 Overlapping groups are either written to the console (if no name template is
-given), to the same file with alignments (if the name template doesn't contain
-"{motif}"), or to a a file separate from the alignments (with "{motif}"
-replaced by "overlaps").
+given), to the same file with un-overlapped alignments (if the name template
+doesn't contain "{motif}"), or to a file separate from the un-overlapped
+alignments (with "{motif}" replaced by "overlaps").
 
 This is summarized in the table below. We assume for this that the input only
 contains two motifs, GGAAT and CATATA.
@@ -59,18 +59,18 @@ contains two motifs, GGAAT and CATATA.
                    | overlap groups written to filename.overlaps
   -----------------+----------------------------------------------------------
 
-Overlap groups are separated by a single blank line, as shown below (note that
-this is a contrived example). When un-overlapped alignments and overlapped ones
-are in the same file, the un-overlapped ones are first, with a blank line
-separating each alignment.
+Overlap groups are separated by a single blank line, as shown below. When
+un-overlapped alignments and overlapped ones are in the same file, the
+un-overlapped ones come first, with a blank line separating each alignment,
+followed by the overlap groups.
 
-  #line motif  seq        start end  strand seqLen querybp mRatio m    mm  i  d
-  1     GGAAT  FAB41174_6 1568  3021 -      3352   1461    82.6%  1242 169 42 50
-  1     CATATA FAB41174_6 1621  2607 -      3352    ...
+  #line motif seq       start end  strand seqLen querybp mRatio m    mm  i  d
+  497   GGTA  JZL5129_2 11178 11604 +     15216  428     93.1%  404  16  6  8
+  505   GGGA  JZL5129_2 11423 11455 +     15216  31      93.8%  30   1   1  0
   (blank line)
-  21    GGAAT  FAB41174_0 2312  3334 -      4223   1060    81.1%  881  115 26 64
-  41    CATATA FAB41174_0 3276  4098 -      4223    ...
-  31    GGAAT  FAB41174_0 3966  4271 +      4223    ...
+  521   GGTA  JZL5129_2 11733 13179 +     15216  1435    89.6%  1325 77  44 33
+  529   GGGA  JZL5129_2 12038 12061 +     15216  23      95.7%  22   1   0  0
+  537   GGGA  JZL5129_2 12291 12402 +     15216  111     92.0%  103  7   1  1
   (blank line)
    ... (more groups)"""
 
