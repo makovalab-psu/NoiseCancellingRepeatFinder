@@ -37,7 +37,8 @@ from ncrf_summary_with_consensus.
 If the output name template includes the substring "{motif}", this substring is
 replaced by a motif name and any un-overlapped alignments to that motif are
 written to that file. If the template name doesn't include "{motif}", all
-un-overlapped alignments and overlapping groups are written to one file.
+un-overlapped alignments and overlapping groups are written to one file. Note
+that "{motif}" is the word "motif" surrounded by two curly brackets.
 
 Overlapping groups are either written to the console (if no name template is
 given), to the same file with alignments (if the name template doesn't contain
