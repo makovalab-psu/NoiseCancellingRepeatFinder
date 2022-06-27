@@ -194,7 +194,7 @@ void free_fasta_feed
 
 	if (src->nt   != NULL) free (src->nt);
 	if (src->name != NULL) free (src->name);
-	                       free (src);
+	free (src);
 	}
 
 //----------
