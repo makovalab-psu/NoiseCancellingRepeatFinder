@@ -306,4 +306,6 @@ ncrf_parse-- _This supports the other scripts and should not be used directly_.
 For questions regarding usage, please contact Bob Harris <rsharris@bx.psu.edu>. 
 
 ### References
-As of Oct/2018 this is unpublished work.
+Harris, Robert S., Monika Cechova, and Kateryna D. Makova. "Noise-cancelling
+repeat finder: uncovering tandem repeats in error-prone long-read sequencing
+data." Bioinformatics 35.22 (2019): 4809-4811.
