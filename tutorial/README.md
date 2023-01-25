@@ -6,9 +6,14 @@ expected.summary.
 
 #### (1) Run Noise Cancelling Repeat Finder to align sequence to repeats.
 
+_Nota Bene: The <--scoring=1.00.XX> option shown below is necessary here to match
+the expected tutorial outputs. You would not normally use that option. And, if
+you are using a version prior to 1.01.00, this option is not recognized. See
+issue #4 for additional details._
+
 ```bash 
     cat example.fa \
-      | NCRF GGAAT **--scoring=1.00.XX** \
+      | NCRF GGAAT --scoring=1.00.XX \
           --minlength=500 --maxnoise=20% --stats=events \
           --positionalevents \
       | ncrf_sort --sortby=mratio \
