@@ -7,7 +7,7 @@ expected.summary.
 #### (1) Run Noise Cancelling Repeat Finder to align sequence to repeats.
 
 _Nota Bene: The <--scoring=1.00.XX> option shown below is necessary here to match
-the expected tutorial outputs. You would not normally use that option. And, if
+the expected tutorial outputs. You should not normally use that option. And, if
 you are using a version prior to 1.01.00, this option is not recognized. See
 issue #4 for additional details._
 
