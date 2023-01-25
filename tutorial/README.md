@@ -8,8 +8,8 @@ expected.summary.
 
 _Nota Bene: The <--scoring=1.00.XX> option shown below is necessary here to match
 the expected tutorial outputs. You should not normally use that option. And, if
-you are using a version prior to 1.01.00, this option is not recognized. See
-issue #4 for additional details._
+you are using a version prior to 1.01.00, this option is not recognized (and is
+not necessary here). See issue #4 for additional details._
 
 ```bash 
     cat example.fa \
@@ -116,9 +116,12 @@ doesn't match the motif, the alignment is discarded.
 Run Noise Cancelling Repeat Finder again, passing the output through the
 consensus filter.
 
+_Nota Bene: As above, the <--scoring=1.00.XX> option is only necessary here to
+match the expected tutorial outputs. You should not normally use that option._
+
 ```bash 
     cat example.fa \
-      | NCRF GGAAT \
+      | NCRF GGAAT --scoring=1.00.XX \
           --minlength=500 --maxnoise=20% \
           --stats=events --positionalevents \
       | ncrf_consensus_filter \
