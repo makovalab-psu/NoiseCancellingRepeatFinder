@@ -8,7 +8,7 @@ expected.summary.
 
 ```bash 
     cat example.fa \
-      | NCRF GGAAT \
+      | NCRF GGAAT **--scoring=1.00.XX** \
           --minlength=500 --maxnoise=20% --stats=events \
           --positionalevents \
       | ncrf_sort --sortby=mratio \
