@@ -303,7 +303,7 @@ followed by the overlap groups.
 ncrf_parse-- _This supports the other scripts and should not be used directly_.
 
 ### Contact
-For questions regarding usage, please contact Bob Harris <rsharris@bx.psu.edu>. 
+For questions regarding usage, please contact Bob Harris <rsharris.bx.psu.edu@gmail.com>. 
 
 ### References
 Harris, Robert S., Monika Cechova, and Kateryna D. Makova. "Noise-cancelling
