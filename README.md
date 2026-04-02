@@ -36,10 +36,11 @@ show you the command). Beware that it might not be stable.
 The build process should not report any warnings or errors. Because of this,
 the Makefile is set up so that warnings are considered errors and will stop the
 build. If you encounter this situation, you can use Makefile.warnings instead:
-```bash  
+<pre>
+    cd NoiseCancellingRepeatFinder  
     make -f Makefile.warnings
-    make  
-```
+</pre>
+<p>
 This should allow the build to complete, while still reporting the warnings.
 You'll need to decide whether the warnings indicate something is really wrong.
 Usually they don't, but please report them to the author regardless.
