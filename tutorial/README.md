@@ -16,7 +16,7 @@ not necessary here). See issue #4 for additional details._
       | NCRF GGAAT --scoring=1.00.XX \
           --minlength=500 --maxnoise=20% --stats=events \
           --positionalevents \
-      | ncrf_sort --sortby=mratio \
+      | ./ncrf_sort.py --sortby=mratio \
       > example.unfiltered.ncrf
 ```
 
@@ -108,7 +108,7 @@ two motifs (GGAAT and GGAT).
 
 #### (3) Filtering for consensus.
 
-ncrf_consensus_filter.py is a post processor that automatically discards
+ncrf_consensus_filter is a post processor that automatically discards
 alignments like the one in the previous example. It derives a consensus
 from the segments of the sequence that aligned to the motif. If the consensus
 doesn't match the motif, the alignment is discarded.
@@ -124,8 +124,8 @@ match the expected tutorial outputs. You should not normally use that option._
       | NCRF GGAAT --scoring=1.00.XX \
           --minlength=500 --maxnoise=20% \
           --stats=events --positionalevents \
-      | ncrf_consensus_filter \
-      | ncrf_sort --sortby=mratio \
+      | ./ncrf_consensus_filter.py \
+      | ./ncrf_sort.py --sortby=mratio \
       > example.filtered.ncrf
 ```
 
@@ -138,8 +138,8 @@ Pass the output through ncrf_summary to get a tabular listing of the aligned
 segments.
 
 ```bash 
-    ncrf_cat example.filtered.ncrf \
-      | ncrf_summary \
+    ./ncrf_cat.py example.filtered.ncrf \
+      | ./ncrf_summary.py \
       > example.summary
 ```
 
