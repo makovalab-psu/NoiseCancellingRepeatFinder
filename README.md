@@ -32,6 +32,18 @@ show you the command). Beware that it might not be stable.
     cd NoiseCancellingRepeatFinder  
     make  
 ```
+<p>
+The build process should not report any warnings or errors. Because of this,
+the Makefile is set up so that warnings are considered errors and will stop the
+build. If you encounter this situation, you can use Makefile.warnings instead:
+```bash  
+    make -f Makefile.warnings
+    make  
+```
+This should allow the build to complete, while still reporting the warnings.
+You'll need to decide whether the warnings indicate something is really wrong.
+Usually they don't, but please report them to the author regardless.
+
 3. You may wish to add the path to your copy of the NoiseCancellingRepeatFinder
 directory to your PATH variable.
 
@@ -303,7 +315,9 @@ followed by the overlap groups.
 ncrf_parse-- _This supports the other scripts and should not be used directly_.
 
 ### Contact
-For questions regarding usage, please contact Bob Harris <rsharris.bx.psu.edu@gmail.com>. 
+For questions regarding usage, please contact
+Bob Harris <rsharris.bx.psu.edu@gmail.com>,
+or open a new issue in this github repository.
 
 ### References
 Harris, Robert S., Monika Cechova, and Kateryna D. Makova. "Noise-cancelling
