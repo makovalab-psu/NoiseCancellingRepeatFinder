@@ -58,10 +58,15 @@ can be used on a command line by name (without the .py part).
 ### Prerequisites
 
 * gcc or similar C compiler and linker
-* python (tested with version 2.7, not likely to work with python 3)
+* python (tested with version 2.7, not likely to work with python 3, but see
+  the note below about python3)
 
 Python is not used by the core program, but is needed for the post-processing
 helper programs included in the package.
+
+Python3. This package was originally written for python 2. There are
+***UNTESTED** versions of the scriptes, for python 3. These are in the python3
+subfolder. They have only been tested very slightly. ***Use at your own risk.***
 
 ### Usage Overview
 
