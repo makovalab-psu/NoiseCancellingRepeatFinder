@@ -65,7 +65,7 @@ Python is not used by the core program, but is needed for the post-processing
 helper programs included in the package.
 
 Python3. This package was originally written for python 2. There are
-***UNTESTED** versions of the scriptes, for python 3. These are in the python3
+***UNTESTED*** versions of the scriptes, for python 3. These are in the python3
 subfolder. They have only been tested very slightly. ***Use at your own risk.***
 
 ### Usage Overview
